@@ -17,9 +17,6 @@
             <div class="sidebar-content">
                 <p>Conversation list will go here.</p>
             </div>
-            <div class="sidebar-footer" style="padding: 10px; border-top: 1px solid #e0e0e0;">
-                 <button id="open-settings-button" style="width: 100%;">Settings</button>
-            </div>
         </aside>
 
         <main class="chat-area" id="chat-area">
@@ -50,80 +47,6 @@
     </div>
 
     <script src="script.js"></script>
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="modal" style="display: none;"> <!-- Hidden by default -->
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Settings</h2>
-                <span class="close-button" id="close-settings-modal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="tabs">
-                    <button class="tab-link active" data-tab="general-settings-tab">General</button>
-                    <button class="tab-link" data-tab="models-settings-tab">Models</button>
-                    <button class="tab-link" data-tab="prompts-settings-tab">System Prompts</button>
-                    <button class="tab-link" data-tab="chats-settings-tab">Chats</button>
-                    <button class="tab-link" data-tab="about-settings-tab">About</button>
-                </div>
-
-                <div id="general-settings-tab" class="tab-content active">
-                    <h4>General Settings</h4>
-                    <div class="setting-item">
-                        <label for="theme-select">Theme:</label>
-                        <select id="theme-select">
-                            <option value="system">System</option>
-                            <option value="light">Light</option>
-                            <option value="dark">Dark</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label for="context-window-size">Context Window (previous messages):</label>
-                        <input type="number" id="context-window-size" min="0" max="50" value="10">
-                        <input type="checkbox" id="context-unlimited"> <label for="context-unlimited">Unlimited</label>
-                    </div>
-                    <hr>
-                    <h5>API Keys (FR3.1, FR4.1)</h5>
-                    <div id="api-keys-list">
-                        <!-- API keys will be listed here by script.js -->
-                        <p><em>No API keys configured yet.</em></p>
-                    </div>
-                    <div class="api-key-form">
-                        <input type="text" id="api-key-name-input" placeholder="Key Name (e.g., Personal)">
-                        <input type="password" id="api-key-value-input" placeholder="API Key (e.g., AIza...)">
-                        <button id="add-api-key-button">Add/Update Key</button>
-                        <small>Enter name and key. If name exists, key will be updated.</small>
-                    </div>
-                    <hr>
-                    <h5>Application Settings Data (FR4.1)</h5>
-                    <div class="setting-item">
-                        <button id="export-settings-button">Export All Settings</button>
-                        <input type="file" id="import-settings-input" accept=".json" style="display: none;">
-                        <button id="import-settings-button">Import Settings from JSON</button>
-                    </div>
-                </div>
-
-                <div id="models-settings-tab" class="tab-content">
-                    <h4>Model Management (FR4.2)</h4>
-                    <p>Model settings will go here...</p>
-                </div>
-                <div id="prompts-settings-tab" class="tab-content">
-                    <h4>System Prompts Library (FR4.3)</h4>
-                    <p>System prompt management will go here...</p>
-                </div>
-                <div id="chats-settings-tab" class="tab-content">
-                    <h4>Chat Management (FR4.4)</h4>
-                    <p>Chat folders and data management will go here...</p>
-                </div>
-                <div id="about-settings-tab" class="tab-content">
-                    <h4>About gChat (FR4.5)</h4>
-                    <p>Version, license, links will go here...</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="save-settings-button">Save Settings</button>
-            </div>
-        </div>
-    </div>
     <template id="chat-message-template">
         <div class="message">
             <div class="message-bubble">
