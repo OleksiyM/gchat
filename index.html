@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gChat - Gemini Powered Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div id="app-container">
+        <div id="sidebar">
+            <div id="sidebar-search">
+              <input type="search" id="search-chats-input" placeholder="Search chats...">
+              <button id="advanced-search-btn">Adv</button> <!-- Placeholder for advanced search -->
+            </div>
+            <div id="pinned-chats-section">
+              <h2>Pinned</h2>
+              <ul id="pinned-chats-list">
+                <!-- Pinned chats will be listed here -->
+                <li><span class="chat-title">Pinned Chat Example 1</span> <!-- Example item -->
+                    <div class="chat-item-actions"> <!-- Placeholder for hover actions -->
+                        <button>E</button><button>D</button><button>F</button><button>U</button><button>A</button><button>X</button>
+                    </div>
+                </li>
+              </ul>
+            </div>
+            <div id="folders-section">
+              <h2>Folders</h2>
+              <ul id="folders-list">
+                <!-- Folders will be listed here -->
+                <li><span class="folder-name">Folder Example 1</span> <!-- Example item -->
+                    <ul class="folder-chat-list">
+                         <li><span class="chat-title">Chat in Folder</span></li>
+                    </ul>
+                </li>
+              </ul>
+            </div>
+            <div id="history-chats-section">
+              <h2>History</h2>
+              <ul id="history-chats-list">
+                <!-- Recent chats will be listed here -->
+                <li><span class="chat-title">History Chat Example 1</span> <!-- Example item -->
+                    <div class="chat-item-actions">  <!-- Placeholder for hover actions -->
+                        <button>E</button><button>D</button><button>F</button><button>P</button><button>A</button><button>X</button>
+                    </div>
+                </li>
+                <li><span class="chat-title">History Chat Example 2</span></li>
+              </ul>
+            </div>
+            <div id="archive-section">
+              <h2>Archive</h2>
+              <ul id="archived-chats-list">
+                <!-- Archived chats will be listed here -->
+                <li><span class="chat-title">Archived Chat Example 1</span></li>
+              </ul>
+            </div>
+            <div id="sidebar-actions">
+                <button id="open-settings-btn">Settings</button>
+                <button id="new-chat-btn">+ New Chat</button>
+            </div>
+        </div>
+        <div id="chat-area">
+            <div id="conversation-actions">
+                <button id="copy-conversation-text-btn">Copy Text</button>
+                <button id="copy-conversation-md-btn">Copy Markdown</button>
+                <button id="export-conversation-txt-btn">Export TXT</button>
+                <button id="export-conversation-md-btn">Export MD</button>
+                <button id="export-conversation-json-btn">Export JSON</button>
+            </div>
+            <div id="conversation-display">
+                <p>Conversation will appear here...</p>
+            </div>
+            <div id="user-input-area">
+                <textarea id="chat-input" placeholder="Type your message..."></textarea>
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+        <div id="right-config-panel"></div>
+        <div id="settings-modal" style="display:none;">
+            <div id="settings-header">
+              <h1>Application Settings</h1>
+              <button id="close-settings-btn">&times;</button>
+            </div>
+            <div id="settings-tab-navigation">
+              <button class="settings-tab-btn active" data-tab="general">General</button>
+              <button class="settings-tab-btn" data-tab="models">Models</button>
+              <button class="settings-tab-btn" data-tab="system-prompts">System Prompts</button>
+              <button class="settings-tab-btn" data-tab="chats">Chats</button>
+              <button class="settings-tab-btn" data-tab="about">About</button>
+            </div>
+            <div id="settings-tab-content">
+              <!-- General Tab (FR4.1) -->
+              <div id="settings-general-tab" class="settings-tab-pane active" style="display:block;">
+                <h2>General Settings</h2>
+                <p>Theme, Context Window, API Keys, Import/Export Settings...</p>
+              </div>
+              <!-- Models Tab (FR4.2) -->
+              <div id="settings-models-tab" class="settings-tab-pane" style="display:none;">
+                <h2>Model Management</h2>
+                <p>Get, update, activate/deactivate, favorite models...</p>
+              </div>
+              <!-- System Prompts Tab (FR4.3) -->
+              <div id="settings-system-prompts-tab" class="settings-tab-pane" style="display:none;">
+                <h2>System Prompts Library</h2>
+                <p>CRUD for custom system prompts...</p>
+              </div>
+              <!-- Chats Tab (FR4.4) -->
+              <div id="settings-chats-tab" class="settings-tab-pane" style="display:none;">
+                <h2>Chat Management</h2>
+                <p>Folder CRUD, Delete All, Export All, Import Chats...</p>
+              </div>
+              <!-- About Tab (FR4.5) -->
+              <div id="settings-about-tab" class="settings-tab-pane" style="display:none;">
+                <h2>About gChat</h2>
+                <p>Version, License, Privacy, GitHub link...</p>
+              </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
