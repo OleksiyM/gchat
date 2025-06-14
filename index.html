@@ -3,121 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>gChat - Gemini Powered Chat</title>
+    <title>gChat</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007bff"/> <!-- Match manifest theme_color -->
 </head>
 <body>
-    <div id="app-container">
-        <div id="sidebar">
-            <div id="sidebar-search">
-              <input type="search" id="search-chats-input" placeholder="Search chats...">
-              <button id="advanced-search-btn">Adv</button> <!-- Placeholder for advanced search -->
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Conversations</h2>
             </div>
-            <div id="pinned-chats-section">
-              <h2>Pinned</h2>
-              <ul id="pinned-chats-list">
-                <!-- Pinned chats will be listed here -->
-                <li><span class="chat-title">Pinned Chat Example 1</span> <!-- Example item -->
-                    <div class="chat-item-actions"> <!-- Placeholder for hover actions -->
-                        <button>E</button><button>D</button><button>F</button><button>U</button><button>A</button><button>X</button>
-                    </div>
-                </li>
-              </ul>
+            <div class="sidebar-content">
+                <p>Conversation list will go here.</p>
             </div>
-            <div id="folders-section">
-              <h2>Folders</h2>
-              <ul id="folders-list">
-                <!-- Folders will be listed here -->
-                <li><span class="folder-name">Folder Example 1</span> <!-- Example item -->
-                    <ul class="folder-chat-list">
-                         <li><span class="chat-title">Chat in Folder</span></li>
-                    </ul>
-                </li>
-              </ul>
+            <div class="sidebar-footer" style="padding: 10px; border-top: 1px solid #e0e0e0;">
+                 <button id="open-settings-button" style="width: 100%;">Settings</button>
             </div>
-            <div id="history-chats-section">
-              <h2>History</h2>
-              <ul id="history-chats-list">
-                <!-- Recent chats will be listed here -->
-                <li><span class="chat-title">History Chat Example 1</span> <!-- Example item -->
-                    <div class="chat-item-actions">  <!-- Placeholder for hover actions -->
-                        <button>E</button><button>D</button><button>F</button><button>P</button><button>A</button><button>X</button>
-                    </div>
-                </li>
-                <li><span class="chat-title">History Chat Example 2</span></li>
-              </ul>
+        </aside>
+
+        <main class="chat-area" id="chat-area">
+            <header class="chat-header" id="chat-header">
+                <h3>Current Chat</h3>
+                <div id="conversation-actions">
+                    <!-- Conversation-level action buttons will go here -->
+                </div>
+            </header>
+            <div class="messages-container" id="messages-container">
+                <!-- Chat messages will be displayed here -->
             </div>
-            <div id="archive-section">
-              <h2>Archive</h2>
-              <ul id="archived-chats-list">
-                <!-- Archived chats will be listed here -->
-                <li><span class="chat-title">Archived Chat Example 1</span></li>
-              </ul>
-            </div>
-            <div id="sidebar-actions">
-                <button id="open-settings-btn">Settings</button>
-                <button id="new-chat-btn">+ New Chat</button>
-            </div>
-        </div>
-        <div id="chat-area">
-            <div id="conversation-actions">
-                <button id="copy-conversation-text-btn">Copy Text</button>
-                <button id="copy-conversation-md-btn">Copy Markdown</button>
-                <button id="export-conversation-txt-btn">Export TXT</button>
-                <button id="export-conversation-md-btn">Export MD</button>
-                <button id="export-conversation-json-btn">Export JSON</button>
-            </div>
-            <div id="conversation-display">
-                <p>Conversation will appear here...</p>
-            </div>
-            <div id="user-input-area">
-                <textarea id="chat-input" placeholder="Type your message..."></textarea>
+            <footer class="chat-input-area" id="chat-input-area">
+                <textarea id="user-input" placeholder="Type your message... (Shift+Enter for new line)"></textarea>
                 <button id="send-button">Send</button>
+                <button id="attach-file-button" aria-label="Attach files">📎</button>
+            </footer>
+        </main>
+
+        <aside class="config-panel" id="config-panel">
+            <div class="config-panel-header">
+                <h4>Configuration</h4>
             </div>
-        </div>
-        <div id="right-config-panel"></div>
-        <div id="settings-modal" style="display:none;">
-            <div id="settings-header">
-              <h1>Application Settings</h1>
-              <button id="close-settings-btn">&times;</button>
+            <div class="config-panel-content">
+                <p>Model and parameter settings will go here.</p>
             </div>
-            <div id="settings-tab-navigation">
-              <button class="settings-tab-btn active" data-tab="general">General</button>
-              <button class="settings-tab-btn" data-tab="models">Models</button>
-              <button class="settings-tab-btn" data-tab="system-prompts">System Prompts</button>
-              <button class="settings-tab-btn" data-tab="chats">Chats</button>
-              <button class="settings-tab-btn" data-tab="about">About</button>
+        </aside>
+    </div>
+
+    <script src="script.js"></script>
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal" style="display: none;"> <!-- Hidden by default -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <span class="close-button" id="close-settings-modal">&times;</span>
             </div>
-            <div id="settings-tab-content">
-              <!-- General Tab (FR4.1) -->
-              <div id="settings-general-tab" class="settings-tab-pane active" style="display:block;">
-                <h2>General Settings</h2>
-                <p>Theme, Context Window, API Keys, Import/Export Settings...</p>
-              </div>
-              <!-- Models Tab (FR4.2) -->
-              <div id="settings-models-tab" class="settings-tab-pane" style="display:none;">
-                <h2>Model Management</h2>
-                <p>Get, update, activate/deactivate, favorite models...</p>
-              </div>
-              <!-- System Prompts Tab (FR4.3) -->
-              <div id="settings-system-prompts-tab" class="settings-tab-pane" style="display:none;">
-                <h2>System Prompts Library</h2>
-                <p>CRUD for custom system prompts...</p>
-              </div>
-              <!-- Chats Tab (FR4.4) -->
-              <div id="settings-chats-tab" class="settings-tab-pane" style="display:none;">
-                <h2>Chat Management</h2>
-                <p>Folder CRUD, Delete All, Export All, Import Chats...</p>
-              </div>
-              <!-- About Tab (FR4.5) -->
-              <div id="settings-about-tab" class="settings-tab-pane" style="display:none;">
-                <h2>About gChat</h2>
-                <p>Version, License, Privacy, GitHub link...</p>
-              </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <button class="tab-link active" data-tab="general-settings-tab">General</button>
+                    <button class="tab-link" data-tab="models-settings-tab">Models</button>
+                    <button class="tab-link" data-tab="prompts-settings-tab">System Prompts</button>
+                    <button class="tab-link" data-tab="chats-settings-tab">Chats</button>
+                    <button class="tab-link" data-tab="about-settings-tab">About</button>
+                </div>
+
+                <div id="general-settings-tab" class="tab-content active">
+                    <h4>General Settings</h4>
+                    <div class="setting-item">
+                        <label for="theme-select">Theme:</label>
+                        <select id="theme-select">
+                            <option value="system">System</option>
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="context-window-size">Context Window (previous messages):</label>
+                        <input type="number" id="context-window-size" min="0" max="50" value="10">
+                        <input type="checkbox" id="context-unlimited"> <label for="context-unlimited">Unlimited</label>
+                    </div>
+                    <hr>
+                    <h5>API Keys (FR3.1, FR4.1)</h5>
+                    <div id="api-keys-list">
+                        <!-- API keys will be listed here by script.js -->
+                        <p><em>No API keys configured yet.</em></p>
+                    </div>
+                    <div class="api-key-form">
+                        <input type="text" id="api-key-name-input" placeholder="Key Name (e.g., Personal)">
+                        <input type="password" id="api-key-value-input" placeholder="API Key (e.g., AIza...)">
+                        <button id="add-api-key-button">Add/Update Key</button>
+                        <small>Enter name and key. If name exists, key will be updated.</small>
+                    </div>
+                    <hr>
+                    <h5>Application Settings Data (FR4.1)</h5>
+                    <div class="setting-item">
+                        <button id="export-settings-button">Export All Settings</button>
+                        <input type="file" id="import-settings-input" accept=".json" style="display: none;">
+                        <button id="import-settings-button">Import Settings from JSON</button>
+                    </div>
+                </div>
+
+                <div id="models-settings-tab" class="tab-content">
+                    <h4>Model Management (FR4.2)</h4>
+                    <p>Model settings will go here...</p>
+                </div>
+                <div id="prompts-settings-tab" class="tab-content">
+                    <h4>System Prompts Library (FR4.3)</h4>
+                    <p>System prompt management will go here...</p>
+                </div>
+                <div id="chats-settings-tab" class="tab-content">
+                    <h4>Chat Management (FR4.4)</h4>
+                    <p>Chat folders and data management will go here...</p>
+                </div>
+                <div id="about-settings-tab" class="tab-content">
+                    <h4>About gChat (FR4.5)</h4>
+                    <p>Version, license, links will go here...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-settings-button">Save Settings</button>
             </div>
         </div>
     </div>
-    <script src="script.js"></script>
+    <template id="chat-message-template">
+        <div class="message">
+            <div class="message-bubble">
+                <div class="message-sender"></div>
+                <div class="message-content"></div>
+                <div class="message-meta">
+                    <span class="message-timestamp"></span>
+                    <span class="message-model"></span>
+                </div>
+                <div class="message-actions">
+                    <!-- Action buttons (copy, edit, delete, info) will go here -->
+                </div>
+            </div>
+        </div>
+    </template>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>

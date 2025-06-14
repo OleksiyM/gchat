@@ -1,12 +1,20 @@
-# PWA Demo Project
+# gChat - A Gemini API Chat Application
 
-This is a demonstration of a Progressive Web Application (PWA).
+This is a web-based chat application that provides a user-friendly interface for interacting with Google's Gemini family of models via their public API.
 
-## Files
+## Running the Application
 
-- `index.html`: The main HTML file.
-- `script.js`: JavaScript code for the application.
-- `style.css`: CSS styles for the application.
-- `sw.js`: The service worker file.
-- `manifest.json`: The web app manifest file.
-- `icons/`: Directory for application icons.
+1.  Clone this repository.
+2.  Since this project is designed to run without a build step, you can serve the files using a simple HTTP server.
+    *   If you have Python installed, you can run `python -m http.server` in the project's root directory.
+    *   Alternatively, you can use a VS Code extension like "Live Server".
+3.  Open your browser and navigate to the server address (e.g., `http://localhost:8000`).
+
+## Project Structure
+
+*   `index.html`: The main HTML file.
+*   `style.css`: CSS styles for the application.
+*   `script.js`: JavaScript logic for the application.
+*   `sw.js`: Service worker for PWA functionality.
+*   `manifest.json`: PWA manifest file.
+*   `icons/`: Directory for application icons.

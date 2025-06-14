@@ -1,86 +1,106 @@
-// Add a logger object for the service worker (console.log for sw is different)
-const logger = {
-  debug: (...args) => console.log('[SW DEBUG]', ...args),
-  info: (...args) => console.info('[SW INFO]', ...args),
-  error: (...args) => console.error('[SW ERROR]', ...args)
-};
-
 const CACHE_NAME = 'gchat-v1';
 const urlsToCache = [
-  '/', // Alias for index.html
-  '/index.html',
-  '/style.css',
-  '/script.js',
-  '/manifest.json', // It's good to cache the manifest too
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
-  // Add other static assets if/when they are created
+    'index.html',
+    'style.css',
+    'script.js',
+    // Add paths to icons once they are available, e.g., 'icons/icon-192x192.png'
 ];
 
-// Install event: opens cache and adds core files
+// Install event: Cache core assets
 self.addEventListener('install', event => {
-  logger.info('Service Worker: Install event in progress.');
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        logger.info('Service Worker: Cache opened, adding core files to cache.');
-        return cache.addAll(urlsToCache);
-      })
-      .then(() => {
-        logger.info('Service Worker: All core files successfully cached.');
-        return self.skipWaiting(); // Force the waiting service worker to become the active service worker.
-      })
-      .catch(error => {
-        logger.error('Service Worker: Cache addAll failed:', error);
-      })
-  );
+    console.log('Service Worker: Installing...');
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => {
+                console.log('Service Worker: Caching core assets:', urlsToCache);
+                return cache.addAll(urlsToCache);
+            })
+            .then(() => self.skipWaiting()) // Activate worker immediately
+            .catch(error => {
+                console.error('Service Worker: Failed to cache core assets:', error);
+            })
+    );
 });
 
-// Activate event: cleans up old caches
+// Activate event: Clean up old caches
 self.addEventListener('activate', event => {
-  logger.info('Service Worker: Activate event in progress.');
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            logger.info(`Service Worker: Deleting old cache: ${cacheName}`);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => {
-      logger.info('Service Worker: Claiming clients.');
-      return self.clients.claim(); // Take control of all open clients.
-    })
-  );
+    console.log('Service Worker: Activating...');
+    event.waitUntil(
+        caches.keys().then(cacheNames => {
+            return Promise.all(
+                cacheNames.map(cacheName => {
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('Service Worker: Deleting old cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim()) // Take control of uncontrolled clients
+    );
 });
 
-// Fetch event: serves assets from cache or fetches from network
+// Fetch event: Serve cached content when offline, or fetch from network
 self.addEventListener('fetch', event => {
-  logger.info(`Service Worker: Fetch event for ${event.request.url}`);
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          logger.info(`Service Worker: Serving from cache: ${event.request.url}`);
-          return response;
-        }
-        logger.info(`Service Worker: Not in cache, fetching from network: ${event.request.url}`);
-        return fetch(event.request)
-          .then(networkResponse => {
-            // Optionally, cache new requests dynamically
-            // For this basic setup, we are only pre-caching essentials.
-            // If you want to cache other things (e.g., API responses for offline),
-            // you'd need to clone the response and put it in the cache here.
-            return networkResponse;
-          })
-          .catch(error => {
-            logger.error(`Service Worker: Fetch failed for ${event.request.url}:`, error);
-            // Optionally, return a fallback offline page here
-            // For instance, if event.request.mode === 'navigate'
-            // return caches.match('/offline.html');
-          });
-      })
-  );
+    // We only want to cache GET requests for our assets
+    if (event.request.method !== 'GET') {
+        return;
+    }
+
+    // For navigation requests (HTML), use a network-first strategy to ensure freshness,
+    // falling back to cache. For other assets, use cache-first.
+    if (event.request.mode === 'navigate') {
+        event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    // If response is valid, cache it
+                    if (response && response.status === 200) {
+                        const responseToCache = response.clone();
+                        caches.open(CACHE_NAME)
+                            .then(cache => {
+                                cache.put(event.request, responseToCache);
+                            });
+                    }
+                    return response;
+                })
+                .catch(() => {
+                    // Network failed, try to serve from cache
+                    return caches.match(event.request)
+                        .then(cachedResponse => {
+                            if (cachedResponse) {
+                                return cachedResponse;
+                            }
+                            // If not in cache and network failed (e.g. for index.html on first offline visit)
+                            // you might want to return a specific offline page here,
+                            // but for now, it will just fail.
+                        });
+                })
+        );
+    } else {
+        event.respondWith(
+            caches.match(event.request)
+                .then(cachedResponse => {
+                    // Cache hit - return response
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+                    // Not in cache - fetch from network
+                    return fetch(event.request).then(
+                        networkResponse => {
+                            // If response is valid, cache it
+                            if (networkResponse && networkResponse.status === 200) {
+                                const responseToCache = networkResponse.clone();
+                                caches.open(CACHE_NAME)
+                                    .then(cache => {
+                                        cache.put(event.request, responseToCache);
+                                    });
+                            }
+                            return networkResponse;
+                        }
+                    ).catch(error => {
+                        console.error('Service Worker: Fetch failed for:', event.request.url, error);
+                        // Optionally, return a fallback asset like a placeholder image
+                    });
+                })
+        );
+    }
 });
