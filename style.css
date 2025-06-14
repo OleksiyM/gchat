@@ -1,348 +1,349 @@
-* {
+/* Basic styling reset and global variables */
+body, html {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-}
-
-html, body {
+    background-color: #f0f2f5;
+    color: #1c1e21;
     height: 100%;
-    font-family: sans-serif;
-    background-color: #f0f0f0; /* Default background for the page */
+    overflow: hidden; /* Prevent body scroll, individual panels will scroll */
 }
 
-#app-container {
+.app-container {
     display: flex;
-    width: 100%;
-    height: 100vh; /* Use vh for viewport height */
-    overflow: hidden; /* Prevent scrollbars on app-container itself */
+    height: 100vh; /* Full viewport height */
 }
 
-#sidebar {
-    width: 250px;
-    background-color: #e0e0e0; /* Light grey */
-    padding: 10px;
-    height: 100%;
-    overflow-y: auto; /* Allow sidebar to scroll if content overflows */
-    display: flex; /* Use flexbox to push sidebar-actions to the bottom */
+/* Sidebar Styling */
+.sidebar {
+    width: 25%;
+    min-width: 280px; /* Minimum width for usability */
+    max-width: 400px; /* Maximum width */
+    background-color: #ffffff;
+    border-right: 1px solid #d1d1d1;
+    display: flex;
     flex-direction: column;
+    transition: width 0.3s ease;
 }
 
-/* Allow main content of sidebar (sections) to scroll, while actions stay at bottom */
-#sidebar > div:not(#sidebar-actions) {
-    flex-shrink: 0; /* Prevent sections from shrinking */
-}
-#sidebar > #pinned-chats-section,
-#sidebar > #folders-section,
-#sidebar > #history-chats-section,
-#sidebar > #archive-section {
-    flex-grow: 1; /* Allow these sections to take available space if needed */
-    overflow-y: auto; /* If individual sections get too long */
-    margin-bottom: 10px;
-}
-
-
-#sidebar-search {
-    display: flex;
-    margin-bottom: 15px;
-}
-
-#search-chats-input {
-    flex-grow: 1;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px 0 0 4px; /* Rounded left corners */
-}
-
-#advanced-search-btn {
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-    border-left: none;
-    background-color: #f0f0f0;
-    border-radius: 0 4px 4px 0; /* Rounded right corners */
-    cursor: pointer;
-}
-
-#sidebar h2 {
-    font-size: 0.9em;
-    color: #333;
-    margin-top: 10px;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 4px;
-}
-
-#sidebar ul {
-    list-style-type: none; /* Remove default bullets */
-    padding-left: 0; /* Remove default padding */
-    margin-bottom: 15px;
-}
-
-#sidebar li {
-    padding: 8px 5px;
-    border-bottom: 1px solid #f0f0f0; /* Light separator for items */
-    cursor: pointer;
-    position: relative; /* For absolute positioning of actions */
-    display: flex; /* To align title and actions */
-    justify-content: space-between; /* Title on left, actions on right */
-    align-items: center;
-}
-
-#sidebar li:hover {
-    background-color: #f5f5f5; /* Slight hover effect */
-}
-
-#sidebar li .chat-title, #sidebar li .folder-name {
-    flex-grow: 1; /* Allow title to take available space */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis; /* Add ellipsis if title is too long */
-}
-
-.chat-item-actions {
-    display: none; /* Hidden by default */
-    /* position: absolute; right: 5px; top: 50%; transform: translateY(-50%); */ /* Alternative positioning */
-    margin-left: 5px; /* Space from title */
-}
-
-#sidebar li:hover .chat-item-actions {
-    display: flex; /* Show on hover */
-    gap: 2px; /* Small gap between action buttons */
-}
-
-.chat-item-actions button {
-    padding: 2px 4px;
-    font-size: 0.8em;
-    background-color: #ddd;
-    border: none;
-    border-radius: 3px;
-}
-.chat-item-actions button:hover {
-    background-color: #ccc;
-}
-
-.folder-chat-list { /* Nested list for chats within a folder */
-    padding-left: 15px; /* Indent chats in folder */
-    margin-top: 5px;
-    border-left: 2px solid #e0e0e0;
-}
-
-#sidebar-actions {
-    margin-top: auto; /* Push to the bottom */
-    padding-top: 10px; /* Space above the buttons */
-    border-top: 1px solid #ccc; /* Separator line */
-    display: flex;
-    flex-direction: column; /* Stack buttons vertically */
-    gap: 8px; /* Space between buttons */
-}
-
-#sidebar-actions button {
-    padding: 10px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    text-align: center;
-}
-
-#sidebar-actions button#open-settings-btn {
-    background-color: #6c757d; /* Secondary color for settings */
-}
-
-#sidebar-actions button:hover {
-    opacity: 0.9;
-}
-
-
-#chat-area {
-    flex-grow: 1; /* Takes up remaining space */
-    background-color: #ffffff; /* White */
-    display: flex;
-    flex-direction: column; /* Stack conversation and input vertically */
-    height: 100%;
-}
-
-#conversation-display {
-    flex-grow: 1; /* Takes up available space within chat-area */
-    overflow-y: auto; /* Allows scrolling for messages */
+.sidebar-header {
     padding: 15px;
-    border-bottom: 1px solid #ccc; /* Separator from input area */
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f7f7f7;
 }
 
-#user-input-area {
-    height: 60px; /* Fixed height for input area */
-    padding: 10px;
-    background-color: #f9f9f9; /* Slightly different background */
-    display: flex; /* Align input elements nicely */
-    align-items: center;
-    border-top: 1px solid #ccc; /* Separator from conversation display */
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 1.2em;
 }
 
-#chat-input {
+.sidebar-content {
+    padding: 15px;
+    overflow-y: auto; /* Enable scrolling for conversation list */
     flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    margin-right: 10px;
-    resize: none; /* Prevent manual resize for now, can be changed to 'vertical' */
-    min-height: 40px; /* Ensure it's not too small */
-    font-family: inherit;
-    font-size: inherit;
 }
 
-#send-button {
-    padding: 10px 15px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-#send-button:hover {
-    background-color: #0056b3;
-}
-
-#conversation-actions {
+/* Chat Area Styling */
+.chat-area {
+    flex-grow: 1; /* Takes up remaining space */
     display: flex;
-    padding: 8px;
-    background-color: #f0f0f0; /* Light background for the action bar */
-    border-bottom: 1px solid #ccc;
-    gap: 8px; /* Space between buttons */
-    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
-}
-
-#conversation-actions button {
-    padding: 6px 10px;
-    font-size: 0.9em;
-    background-color: #6c757d; /* Bootstrap secondary-like color */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-#conversation-actions button:hover {
-    background-color: #5a6268;
-}
-
-
-#right-config-panel {
-    width: 300px;
-    background-color: #e8e8e8; /* Slightly different grey */
-    padding: 10px;
-    height: 100%;
-    overflow-y: auto; /* Allow config panel to scroll */
-}
-
-#settings-modal {
-    position: fixed; /* Sits on top of other content */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Center the modal */
-    width: 80%;
-    max-width: 700px; /* Increased max-width for more content */
-    max-height: 80vh; /* Limit height and allow scrolling */
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.25);
-    z-index: 1000; /* Ensure it's above other elements */
-    display: flex; /* Use flex to structure header, nav, content */
     flex-direction: column;
-    /* padding: 20px; is removed as sections will have their own padding */
+    background-color: #ffffff;
 }
 
-#settings-header {
+.chat-header {
+    padding: 15px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f7f7f7;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
-    border-bottom: 1px solid #eee;
 }
 
-#settings-header h1 {
-    font-size: 1.4em;
+.chat-header h3 {
     margin: 0;
+    font-size: 1.1em;
 }
 
-#close-settings-btn {
-    background: none;
+.messages-container {
+    flex-grow: 1;
+    overflow-y: auto; /* For scrolling messages */
+    padding: 20px;
+    background-color: #e5ddd5; /* WhatsApp-like background */
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-input-area {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #d1d1d1;
+    background-color: #f0f0f0;
+    align-items: center;
+}
+
+#user-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 18px; /* Rounded corners */
+    resize: none; /* Prevent manual resize, will be JS controlled if needed */
+    font-size: 1em;
+    min-height: 20px; /* Min height for one line */
+    max-height: 100px; /* Max height before scrolling */
+    overflow-y: auto; /* Scroll within textarea if content exceeds max-height */
+    margin-right: 8px;
+}
+
+#send-button, #attach-file-button {
+    padding: 10px 15px;
     border: none;
-    font-size: 2em;
+    border-radius: 18px;
+    background-color: #007bff;
+    color: white;
     cursor: pointer;
-    padding: 0 5px;
+    font-size: 1em;
+    margin-left: 5px;
+}
+
+#send-button:hover, #attach-file-button:hover {
+    background-color: #0056b3;
+}
+
+#attach-file-button {
+    background-color: #6c757d;
+    font-size: 1.2em; /* Make icon slightly larger */
+    padding: 8px 12px;
+}
+
+#attach-file-button:hover {
+    background-color: #545b62;
+}
+
+
+/* Right Configuration Panel Styling */
+.config-panel {
+    width: 20%;
+    min-width: 250px;
+    max-width: 350px;
+    background-color: #ffffff;
+    border-left: 1px solid #d1d1d1;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+}
+
+.config-panel-header {
+    padding: 15px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f7f7f7;
+}
+
+.config-panel-header h4 {
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.config-panel-content {
+    padding: 15px;
+    overflow-y: auto; /* Enable scrolling for settings */
+    flex-grow: 1;
+}
+
+/* Basic Responsiveness: Stack panels on smaller screens */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+
+    .sidebar, .config-panel {
+        width: 100%;
+        height: auto; /* Adjust height as needed */
+        max-height: 30vh; /* Limit height on small screens */
+        border-right: none;
+        border-left: none;
+        border-bottom: 1px solid #d1d1d1;
+    }
+
+    .chat-area {
+        height: 70vh; /* Adjust based on sidebar/config panel heights */
+    }
+
+    .config-panel {
+        order: 3; /* Move config panel to bottom on mobile if desired */
+    }
+}
+
+/* --- Notification Styling (TS 5.3) --- */
+#notification-area {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000; /* Ensure notifications are on top */
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Spacing between multiple notifications */
+}
+
+.notification {
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    color: #fff;
+    font-size: 0.95em;
+    opacity: 0;
+    transform: translateX(100%); /* Start off-screen */
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-width: 250px; /* Minimum width */
+    max-width: 350px; /* Maximum width */
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.hide {
+    opacity: 0;
+    transform: translateX(100%); /* Slide out */
+}
+
+.notification-info {
+    background-color: #007bff; /* Blue for info */
+    border-left: 5px solid #0056b3;
+}
+
+.notification-success {
+    background-color: #28a745; /* Green for success */
+    border-left: 5px solid #1e7e34;
+}
+
+.notification-error {
+    background-color: #dc3545; /* Red for error */
+    border-left: 5px solid #b02a37;
+}
+
+.notification-close {
+    margin-left: 15px;
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: bold;
     line-height: 1;
 }
 
-#settings-tab-navigation {
+.notification-close:hover {
+    opacity: 0.8;
+}
+/* --- End Notification Styling --- */
+
+/* --- Chat Message Styling (FR1.1) --- */
+.messages-container {
+    /* ... existing styles ... */
+    padding-bottom: 10px; /* Space for the last message not to be too close to input */
+}
+
+.message {
     display: flex;
-    border-bottom: 1px solid #eee;
-    padding: 0 10px; /* Padding for the nav bar itself */
+    margin-bottom: 12px;
+    animation: fadeIn 0.3s ease-out;
 }
 
-.settings-tab-btn {
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message-bubble {
+    max-width: 70%; /* Max width of message bubble */
     padding: 10px 15px;
-    cursor: pointer;
-    border: none;
-    background-color: transparent;
-    border-bottom: 3px solid transparent; /* For active indicator */
-    margin-bottom: -1px; /* Overlap with content border */
-    font-size: 1em;
+    border-radius: 18px; /* Rounded corners for bubbles */
+    position: relative; /* For potential future absolute positioned elements inside */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.settings-tab-btn.active {
-    border-bottom-color: #007bff; /* Active tab indicator color */
-    font-weight: bold;
-    color: #007bff;
+.user-message {
+    justify-content: flex-end; /* Align user messages to the right */
 }
 
-.settings-tab-btn:hover:not(.active) {
-    background-color: #f9f9f9;
-    border-bottom-color: #ccc;
+.user-message .message-bubble {
+    background-color: #007bff; /* User message color (e.g., blue) */
+    color: white;
+    border-bottom-right-radius: 5px; /* Differentiate shape slightly */
+    margin-right: 10px; /* Add some margin to the right */
 }
 
-#settings-tab-content {
-    padding: 20px;
-    overflow-y: auto; /* Allow content to scroll if it exceeds modal height */
-    flex-grow: 1; /* Take remaining space in modal */
+.ai-message {
+    justify-content: flex-start; /* Align AI messages to the left */
 }
 
-.settings-tab-pane {
-    /* Basic padding/border can be added here if needed for all panes */
-    /* display: none; is handled by JS and inline styles for initial state */
-}
-
-.settings-tab-pane h2 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.2em;
+.ai-message .message-bubble {
+    background-color: #e9e9eb; /* AI message color (e.g., light grey) */
     color: #333;
+    border-bottom-left-radius: 5px; /* Differentiate shape slightly */
+    margin-left: 10px; /* Add some margin to the left */
 }
 
-
-/* Simple Media Query for smaller screens */
-@media (max-width: 768px) {
-    #app-container {
-        flex-direction: column; /* Stack main areas vertically */
-    }
-
-    #sidebar {
-        width: 100%; /* Full width */
-        height: auto; /* Adjust height as needed, or set a fixed one like 150px */
-        max-height: 200px; /* Example max height for scrollable sidebar */
-        border-bottom: 1px solid #ccc;
-    }
-
-    #right-config-panel {
-        width: 100%; /* Full width */
-        height: auto; /* Adjust height as needed, or set a fixed one */
-        max-height: 150px; /* Example max height */
-        border-top: 1px solid #ccc;
-    }
-
-    #chat-area {
-        height: auto; /* Let it take remaining space after sidebar/config panel fixed heights */
-    }
+.message-sender {
+    font-weight: bold;
+    font-size: 0.8em;
+    margin-bottom: 4px;
+    /* Color can be adapted based on user/ai or theme */
 }
+
+.user-message .message-sender {
+    /* display: none; /* Optionally hide "You" if clear from alignment */
+    color: #d1e7ff; /* Lighter color for sender text on dark bubble */
+}
+
+.ai-message .message-sender {
+    color: #555;
+}
+
+.message-content {
+    font-size: 1em;
+    white-space: pre-wrap; /* Preserve whitespace and newlines */
+    word-wrap: break-word; /* Break long words */
+}
+
+.message-meta {
+    font-size: 0.75em;
+    margin-top: 8px;
+    text-align: right;
+}
+
+.user-message .message-meta {
+    color: #b3d7ff; /* Lighter color for meta text on dark bubble */
+}
+
+.ai-message .message-meta {
+    color: #777;
+}
+
+.message-timestamp {
+    margin-right: 5px;
+}
+
+.message-model {
+    font-style: italic;
+}
+
+.message-actions {
+    /* Style for actions bar on hover - to be implemented later */
+    display: none; /* Hidden for now */
+    position: absolute;
+    top: -10px; /* Adjust as needed */
+    right: 10px; /* Adjust as needed */
+    background-color: rgba(255,255,255,0.9);
+    border-radius: 5px;
+    padding: 2px 5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.message-bubble:hover .message-actions {
+    /* display: flex; /* Show on hover - enable when actions are added */
+}
+
+/* --- End Chat Message Styling --- */
