@@ -576,3 +576,73 @@ if (attachFileButton) {
 }
 
 // --- End Chat Interface - User Input ---
+
+// --- Settings Modal (FR4) ---
+const settingsModal = document.getElementById('settings-modal');
+const closeSettingsButton = document.getElementById('close-settings-modal');
+// const openSettingsButton = document.getElementById('open-settings-btn'); // If you add a button
+const tabButtons = document.querySelectorAll('.modal-body .tabs .tab-button');
+const tabContents = document.querySelectorAll('.modal-body .tab-content');
+
+function openSettingsModal() {
+    if (settingsModal) {
+        settingsModal.style.display = 'flex'; // Show the overlay
+        setTimeout(() => settingsModal.classList.add('active'), 10); // Trigger animation
+        logger.info('Settings modal opened.');
+        // Load existing settings into fields when modal opens (will be done in later steps)
+    } else {
+        logger.error('Settings modal element not found.');
+    }
+}
+
+function closeSettingsModal() {
+    if (settingsModal) {
+        settingsModal.classList.remove('active');
+        setTimeout(() => settingsModal.style.display = 'none', 300); // Wait for animation
+        logger.info('Settings modal closed.');
+    }
+}
+
+// Event listener for a dedicated open button (if you add one)
+// if (openSettingsButton) {
+//     openSettingsButton.addEventListener('click', openSettingsModal);
+// }
+
+if (closeSettingsButton) {
+    closeSettingsButton.addEventListener('click', closeSettingsModal);
+}
+
+// Close modal if user clicks on the overlay
+if (settingsModal) {
+    settingsModal.addEventListener('click', (event) => {
+        if (event.target === settingsModal) { // Clicked on overlay itself
+            closeSettingsModal();
+        }
+    });
+}
+
+// Tab switching logic
+tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        // Deactivate all tabs and buttons
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+
+        // Activate clicked tab and its content
+        button.classList.add('active');
+        const tabId = button.getAttribute('data-tab');
+        const activeTabContent = document.getElementById(tabId);
+        if (activeTabContent) {
+            activeTabContent.classList.add('active');
+            logger.debug(`Switched to settings tab: ${tabId}`);
+        } else {
+            logger.error(`Tab content not found for ID: ${tabId}`);
+        }
+    });
+});
+
+// Example: Make the modal openable via console for now
+// window.openSettingsModal = openSettingsModal;
+// logger.info("Settings modal can be opened by calling openSettingsModal() in the console.");
+
+// --- End Settings Modal ---
