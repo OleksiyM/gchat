@@ -306,6 +306,58 @@ function renderMarkdown(element, text) {
     }
 }
 
+function adjustTextareaHeight(textareaElement) {
+    textareaElement.style.height = 'auto'; // Reset height
+
+    const computedStyle = getComputedStyle(textareaElement);
+    const paddingTop = parseFloat(computedStyle.paddingTop);
+    const paddingBottom = parseFloat(computedStyle.paddingBottom);
+    const scrollHeight = textareaElement.scrollHeight;
+
+    let lineHeight = parseFloat(computedStyle.lineHeight);
+    if (isNaN(lineHeight) || computedStyle.lineHeight === 'normal') {
+        // Fallback for 'normal' or if parsing failed.
+        // Create a temporary element to measure line height.
+        const temp = document.createElement('div');
+        temp.style.font = computedStyle.font;
+        temp.style.visibility = 'hidden';
+        temp.style.position = 'absolute';
+        temp.textContent = 'M'; // Single character for measurement
+        document.body.appendChild(temp);
+        lineHeight = temp.offsetHeight;
+        document.body.removeChild(temp);
+    }
+
+    if (lineHeight <= 0) { // Another fallback if line height is still invalid
+        lineHeight = parseFloat(computedStyle.fontSize) * 1.2;
+    }
+
+    // Calculate content height excluding top/bottom padding
+    const contentHeight = scrollHeight - paddingTop - paddingBottom;
+
+    let numberOfLines = 0;
+    if (contentHeight > 0 && lineHeight > 0) {
+        numberOfLines = Math.round(contentHeight / lineHeight);
+    } else if (textareaElement.value === '') { // Handle empty textarea
+        numberOfLines = 0;
+    } else { // Fallback if contentHeight or lineHeight is zero with content
+        numberOfLines = 1;
+    }
+
+    // Ensure textarea is at least one line high, even if empty, matching rows="1"
+    if (textareaElement.value === '' && numberOfLines === 0) {
+        textareaElement.style.height = lineHeight + paddingTop + paddingBottom + 'px';
+    } else if (numberOfLines > 0) {
+        const targetLines = Math.min(5, Math.max(1, numberOfLines)); // Ensure at least 1 line
+        const targetHeight = (targetLines * lineHeight) + paddingTop + paddingBottom;
+        textareaElement.style.height = targetHeight + 'px';
+    } else {
+        // Default to single line height if other conditions don't specify
+        textareaElement.style.height = lineHeight + paddingTop + paddingBottom + 'px';
+    }
+    // overflow-y: auto is already set in CSS
+}
+
 async function renderChat(chatId) {
     dom.chatWindow.innerHTML = '';
     if (!chatId) return;
@@ -755,6 +807,7 @@ async function handleSendMessage() {
 
     state.isGenerating = true;
     dom.sendButton.disabled = true;
+    dom.sendButton.classList.add('sending');
     
     const userMessage = {
         id: crypto.randomUUID(),
@@ -769,7 +822,7 @@ async function handleSendMessage() {
         dom.chatWindow.appendChild(createMessageElement(userMessage));
         dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
         dom.userInput.value = '';
-        dom.userInput.style.height = 'auto';
+        adjustTextareaHeight(dom.userInput); // Reset height after clearing
         await getAIResponse(apiKeyData.key);
     } catch (err) {
         logger.error('Error sending message:', err);
@@ -930,6 +983,7 @@ async function getAIResponse(apiKey) {
     } finally {
         state.isGenerating = false;
         dom.sendButton.disabled = false;
+        dom.sendButton.classList.remove('sending');
         dom.userInput.focus();
     }
 }
@@ -949,10 +1003,15 @@ function resetPromptForm() {
 function setupEventListeners() {
     dom.newChatBtn.addEventListener('click', createNewChat);
     dom.sendButton.addEventListener('click', handleSendMessage);
+
+    dom.userInput.addEventListener('input', () => adjustTextareaHeight(dom.userInput));
     dom.userInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
+        } else if (e.key === 'Enter' && e.shiftKey) {
+            // Allow default behavior (newline)
+            setTimeout(() => adjustTextareaHeight(dom.userInput), 0);
         }
     });
     
