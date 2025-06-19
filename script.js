@@ -72,6 +72,7 @@ const dom = {
     dynamicThinkingSwitcher: document.getElementById('dynamic-thinking-switcher'),
     thinkingBudgetSlider: document.getElementById('thinking-budget-slider'),
     thinkingBudgetValueDisplay: document.getElementById('thinking-budget-value'),
+    disableThinkingSwitcher: document.getElementById('disable-thinking-switcher'),
 
     // Settings Modal
     settingsModal: document.getElementById('settings-modal'),
@@ -203,6 +204,7 @@ const settingsManager = {
         enableThinking: false,
         enableDynamicThinking: false,
         thinkingBudget: 0,
+        disableThinking: false,
     },
     load() {
         let storedSettings = {};
@@ -718,6 +720,9 @@ function updateSettingsUI() {
     if (dom.thinkingSwitcher) {
         dom.thinkingSwitcher.checked = settingsManager.get('enableThinking');
     }
+    if (dom.disableThinkingSwitcher) {
+        dom.disableThinkingSwitcher.checked = settingsManager.get('disableThinking');
+    }
     if (dom.dynamicThinkingSwitcher) {
         dom.dynamicThinkingSwitcher.checked = settingsManager.get('enableDynamicThinking');
         dom.dynamicThinkingSwitcher.disabled = !settingsManager.get('enableThinking');
@@ -803,21 +808,29 @@ async function getAIResponse(apiKey) {
             maxOutputTokens: parseInt(dom.maxLengthInput.value, 10),
         };
 
+        // Handle thinkingConfig based on new logic
+        const disableThinking = settingsManager.get('disableThinking');
         const enableThinking = settingsManager.get('enableThinking');
-        const enableDynamicThinking = settingsManager.get('enableDynamicThinking');
-        const thinkingBudgetSetting = settingsManager.get('thinkingBudget');
 
-        if (enableThinking) {
-            const thConfig = {};
-            if (enableDynamicThinking) {
-                thConfig.thinkingBudget = -1; // Dynamic budget
-            } else {
-                thConfig.thinkingBudget = parseInt(thinkingBudgetSetting, 10);
-            }
-            generationConfig.thinkingConfig = thConfig;
-        } else {
-            // Explicitly turn thinking off if enableThinking is false
+        if (disableThinking) {
             generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        } else {
+            if (enableThinking) {
+                const enableDynamicThinking = settingsManager.get('enableDynamicThinking');
+                const thinkingBudgetSetting = settingsManager.get('thinkingBudget');
+                const thConfig = {};
+                if (enableDynamicThinking) {
+                    thConfig.thinkingBudget = -1; // Dynamic budget
+                } else {
+                    thConfig.thinkingBudget = parseInt(thinkingBudgetSetting, 10);
+                }
+                generationConfig.thinkingConfig = thConfig;
+            } else {
+                // If disableThinking is false AND enableThinking is false,
+                // no thinkingConfig should be added.
+                // If generationConfig could have a pre-existing thinkingConfig, clear it:
+                // delete generationConfig.thinkingConfig; // Uncomment if necessary
+            }
         }
 
         // Get system prompt from the text area
@@ -1135,6 +1148,12 @@ function setupEventListeners() {
             const budget = event.target.value;
             dom.thinkingBudgetValueDisplay.textContent = budget;
             settingsManager.set('thinkingBudget', parseInt(budget, 10));
+        });
+    }
+
+    if (dom.disableThinkingSwitcher) {
+        dom.disableThinkingSwitcher.addEventListener('change', (event) => {
+            settingsManager.set('disableThinking', event.target.checked);
         });
     }
 
