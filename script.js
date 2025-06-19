@@ -63,6 +63,8 @@ const dom = {
     topPSlider: document.getElementById('top-p-slider'),
     topPValueDisplay: document.getElementById('top-p-value'),
     maxLengthInput: document.getElementById('max-length-input'),
+    googleSearchSwitcher: document.getElementById('google-search-switcher'),
+    urlContextSwitcher: document.getElementById('url-context-switcher'),
 
     // Settings Modal
     settingsModal: document.getElementById('settings-modal'),
@@ -189,6 +191,8 @@ const settingsManager = {
         logLevel: 'info',
         models: { list: [] },
         folders: [],
+        enableGoogleSearchGrounding: false,
+        enableUrlContext: false,
     },
     load() {
         let storedSettings = {};
@@ -688,6 +692,14 @@ function updateSettingsUI() {
     updateSystemPromptDropdowns();
     // Chats Tab
     renderFolderListSettings();
+
+    // FR?: New switchers in config panel
+    if (dom.googleSearchSwitcher) { // Check if element exists
+        dom.googleSearchSwitcher.checked = settingsManager.get('enableGoogleSearchGrounding');
+    }
+    if (dom.urlContextSwitcher) { // Check if element exists
+        dom.urlContextSwitcher.checked = settingsManager.get('enableUrlContext');
+    }
 }
 
 // --- 6. CORE LOGIC ---
@@ -770,11 +782,25 @@ async function getAIResponse(apiKey) {
             // dom.systemPromptSelect.value = 'default'; // or add a specific <option> for "Custom"
         }
         
-        const model = genAI.getGenerativeModel({
+        let tools = [];
+        if (settingsManager.get('enableGoogleSearchGrounding')) {
+            tools.push({ "google_search": {} });
+        }
+        if (settingsManager.get('enableUrlContext')) {
+            tools.push({ "url_context": {} });
+        }
+
+        const modelParams = {
             model: modelUsed,
             generationConfig,
             systemInstruction
-        });
+        };
+
+        if (tools.length > 0) {
+            modelParams.tools = tools;
+        }
+
+        const model = genAI.getGenerativeModel(modelParams);
 
         // Prepare chat history for the API
         let dbHistory = await dbManager.getMessagesForChat(state.currentChatId);
@@ -1002,6 +1028,19 @@ function setupEventListeners() {
     if (dom.topPSlider && dom.topPValueDisplay) {
         dom.topPSlider.addEventListener('input', (event) => {
             dom.topPValueDisplay.textContent = event.target.value;
+        });
+    }
+
+    // FR?: Event listeners for new switchers
+    if (dom.googleSearchSwitcher) {
+        dom.googleSearchSwitcher.addEventListener('change', (event) => {
+            settingsManager.set('enableGoogleSearchGrounding', event.target.checked);
+        });
+    }
+
+    if (dom.urlContextSwitcher) {
+        dom.urlContextSwitcher.addEventListener('change', (event) => {
+            settingsManager.set('enableUrlContext', event.target.checked);
         });
     }
 
