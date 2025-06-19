@@ -70,13 +70,20 @@
 
         <!-- FR6: RIGHT CONFIGURATION PANEL -->
         <aside class="config-panel">
-            <header class="panel-header">Configuration</header>
+            <header class="panel-header">
+                <span>Configuration</span>
+                <button id="close-config-panel-btn" class="btn-icon-header" title="Close Panel">&times;</button>
+            </header>
             <div class="form-group">
                 <label for="system-prompt-select">System Prompt</label>
                 <select id="system-prompt-select" class="form-control">
                     <option value="default">Default</option>
                 </select>
             </div>
+                    <div class="form-group">
+                        <label for="custom-system-prompt-text">Prompt Text</label>
+                        <textarea id="custom-system-prompt-text" class="form-control" rows="5" placeholder="Enter custom system prompt or see selected prompt text here..."></textarea>
+                    </div>
             <div class="form-group">
                 <label for="api-key-select">API Key (for this request)</label>
                 <select id="api-key-select" class="form-control">
