@@ -404,7 +404,7 @@ pre code.hljs {
   padding: 0.8rem 3rem 0.8rem 3rem;
   font-size: 1rem;
   resize: none;
-  max-height: 200px;
+  /* max-height: 200px; */ /* Controlled by JS now */
   overflow-y: auto;
 }
 #sendButton, #file-attach-button {
@@ -433,6 +433,17 @@ pre code.hljs {
 #sendButton svg, #file-attach-button svg {
   width: 20px;
   height: 20px;
+}
+
+#sendButton.sending svg {
+  display: none; /* Hide original SVG */
+}
+
+#sendButton.sending {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-6.219-8.56'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: var(--hover-bg); /* Optional: maintain a background color */
 }
 
 /* --- Sidebar & Config Panel Common Styles --- */
