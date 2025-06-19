@@ -430,12 +430,32 @@ pre code.hljs {
 
 /* --- Sidebar & Config Panel Common Styles --- */
 .panel-header {
-  font-size: 1.1rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
+    display: flex; /* Use flexbox for alignment */
+    justify-content: space-between; /* Pushes title and button apart */
+    align-items: center; /* Vertically aligns items */
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
 }
+
+.btn-icon-header {
+    background: none;
+    border: none;
+    color: var(--icon-color);
+    font-size: 1.5rem; /* Make X larger */
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    line-height: 1;
+    border-radius: 4px;
+}
+
+.btn-icon-header:hover {
+    background-color: var(--hover-bg);
+    color: var(--text-color);
+}
+
 .panel-section {
     margin-bottom: 1.5rem;
 }

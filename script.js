@@ -53,11 +53,15 @@ const dom = {
     
     // Config Panel
     configToggleBtn: document.getElementById('config-toggle-btn'),
+    closeConfigPanelBtn: document.getElementById('close-config-panel-btn'),
     systemPromptSelect: document.getElementById('system-prompt-select'),
+        customSystemPromptText: document.getElementById('custom-system-prompt-text'),
     apiKeySelect: document.getElementById('api-key-select'),
     modelSelect: document.getElementById('model-select'),
     temperatureSlider: document.getElementById('temperature-slider'),
+    tempValueDisplay: document.getElementById('temp-value'),
     topPSlider: document.getElementById('top-p-slider'),
+    topPValueDisplay: document.getElementById('top-p-value'),
     maxLengthInput: document.getElementById('max-length-input'),
 
     // Settings Modal
@@ -643,6 +647,25 @@ async function updateSystemPromptDropdowns() {
         option.textContent = prompt.title;
         dom.systemPromptSelect.appendChild(option);
     });
+
+    // Add event listener for system prompt select change
+    dom.systemPromptSelect.addEventListener('change', async (event) => {
+        const selectedId = event.target.value;
+        const customPromptTextArea = dom.customSystemPromptText;
+        if (selectedId === 'default') {
+            customPromptTextArea.value = '';
+        } else {
+            const prompt = await dbManager.get('system_prompts', selectedId);
+            if (prompt) {
+                customPromptTextArea.value = prompt.text;
+            } else {
+                customPromptTextArea.value = ''; // Should not happen if ID is from DB
+            }
+        }
+    });
+    // Dispatch change event to populate textarea initially after dropdowns are updated
+    // This ensures the textarea is populated when the app loads or settings are updated.
+    dom.systemPromptSelect.dispatchEvent(new Event('change'));
 }
 
 function updateSettingsUI() {
@@ -738,12 +761,13 @@ async function getAIResponse(apiKey) {
             maxOutputTokens: parseInt(dom.maxLengthInput.value, 10),
         };
 
-        // Get system prompt
-        const systemPromptId = dom.systemPromptSelect.value;
+        // Get system prompt from the text area
+        const customPromptText = dom.customSystemPromptText.value.trim();
         let systemInstruction = null;
-        if (systemPromptId !== 'default') {
-            const prompt = await dbManager.get('system_prompts', systemPromptId);
-            if (prompt) systemInstruction = { role: 'user', parts: [{ text: prompt.text }] };
+        if (customPromptText) {
+            systemInstruction = { parts: [{ text: customPromptText }] };
+            // Optionally, if you want to reflect that a custom/modified prompt is in use:
+            // dom.systemPromptSelect.value = 'default'; // or add a specific <option> for "Custom"
         }
         
         const model = genAI.getGenerativeModel({
@@ -853,6 +877,12 @@ function setupEventListeners() {
     dom.openSettingsBtn.addEventListener('click', () => dom.settingsModal.classList.add('visible'));
     dom.closeSettingsBtn.addEventListener('click', () => dom.settingsModal.classList.remove('visible'));
     dom.settingsModal.addEventListener('click', (e) => e.target === dom.settingsModal && dom.settingsModal.classList.remove('visible'));
+
+    if (dom.closeConfigPanelBtn) { // Ensure element exists
+        dom.closeConfigPanelBtn.addEventListener('click', () => {
+            dom.configPanel.classList.add('collapsed');
+        });
+    }
     
     dom.settingsNav.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') {
@@ -963,6 +993,18 @@ function setupEventListeners() {
         resetPromptForm();
     });
     
+    if (dom.temperatureSlider && dom.tempValueDisplay) {
+        dom.temperatureSlider.addEventListener('input', (event) => {
+            dom.tempValueDisplay.textContent = event.target.value;
+        });
+    }
+
+    if (dom.topPSlider && dom.topPValueDisplay) {
+        dom.topPSlider.addEventListener('input', (event) => {
+            dom.topPValueDisplay.textContent = event.target.value;
+        });
+    }
+
     setupGeneralAndChatSettingsListeners();
 }
 
