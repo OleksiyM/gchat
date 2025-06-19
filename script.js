@@ -35,6 +35,9 @@ const dom = {
     sidebar: document.querySelector('.sidebar'),
     mainContent: document.querySelector('.main-content'),
     configPanel: document.querySelector('.config-panel'),
+    closeSidebarBtn: document.getElementById('close-sidebar-btn'),
+    openSidebarBtn: document.getElementById('open-sidebar-btn'),
+    speedNewChatBtn: document.getElementById('speed-new-chat-btn'),
     
     // Chat
     chatWindow: document.querySelector('.chat-window'),
@@ -1136,6 +1139,27 @@ function setupEventListeners() {
     }
 
     setupGeneralAndChatSettingsListeners();
+
+    // Left Sidebar specific listeners
+    if (dom.closeSidebarBtn && dom.sidebar && dom.openSidebarBtn && dom.speedNewChatBtn) {
+        dom.closeSidebarBtn.addEventListener('click', () => {
+            dom.sidebar.classList.add('collapsed');
+            dom.openSidebarBtn.style.display = 'block';
+            dom.speedNewChatBtn.style.display = 'block';
+        });
+    }
+
+    if (dom.openSidebarBtn && dom.sidebar && dom.speedNewChatBtn) {
+        dom.openSidebarBtn.addEventListener('click', () => {
+            dom.sidebar.classList.remove('collapsed');
+            dom.openSidebarBtn.style.display = 'none';
+            dom.speedNewChatBtn.style.display = 'none';
+        });
+    }
+
+    if (dom.speedNewChatBtn) {
+        dom.speedNewChatBtn.addEventListener('click', createNewChat);
+    }
 }
 
 function setupGeneralAndChatSettingsListeners() {
