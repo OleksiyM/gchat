@@ -1,6 +1,10 @@
 # gChat - Gemini API Chat
 
-[![gChat Application Screenshot](gChat_app.jpg)](gChat_app.jpg)
+<div align="center">
+
+[![gChat](/icons/icon-192x192.png)](/icons/icon-192x192.png)
+
+</div>
 
 gChat is a feature-rich, customizable web chat application for Google's Gemini API. It operates as a Progressive Web App (PWA), storing all your chats, settings, and API keys locally in your browser. This ensures your data remains private and accessible even offline (for the app shell and cached resources).
 
@@ -104,10 +108,15 @@ Contributions are welcome! If you have ideas for new features, bug fixes, or imp
 6.  **Push to the branch:** `git push origin feature/my-new-feature`
 7.  **Submit a pull request** for review.
 
-Please try to maintain the existing coding style (vanilla JavaScript, ES Modules) and ensure that no build steps are introduced, as the project is designed to run directly in the browser.
-
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE.md](LICENSE.md) file for details (if one exists), or refer to the standard MIT License terms.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details, or refer to the standard MIT License terms.
 
-*(Developer Note: Consider adding a `LICENSE.md` file to the repository with the full MIT License text if it's not already present.)*
+---
+
+<div align="center">
+
+**gChat** - A lightweight chat interface for Gemini models
+
+</div>
+
