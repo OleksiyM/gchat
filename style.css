@@ -590,8 +590,7 @@ pre code.hljs {
     cursor: pointer;
     position: relative;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* text-overflow: ellipsis; */ /* Moved to .chat-item-title */
 }
 .chat-history-item:hover {
     background-color: var(--hover-bg);
@@ -604,12 +603,23 @@ pre code.hljs {
     background-color: var(--primary-color-dark);
     color: var(--bg-color-dark);
 }
+
+/* New rule for chat item title */
+.chat-item-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-grow: 1;
+    min-width: 0; /* Important for flex item to shrink and allow ellipsis */
+}
+
 .chat-item-actions {
     margin-left: auto;
-    display: none;
+    display: flex; /* Changed from none to flex */
+    flex-shrink: 0; /* Prevent actions from shrinking */
 }
 .chat-history-item:hover .chat-item-actions {
-    display: block;
+    /* display: block; */ /* This is no longer needed as it's always flex now */
 }
 .chat-item-menu-btn {
     background: none;

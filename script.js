@@ -1404,6 +1404,7 @@ function createChatListItem(chat) {
     const titleSpan = document.createElement('span');
     titleSpan.className = 'chat-item-title';
     titleSpan.textContent = chat.title;
+    titleSpan.title = chat.title; // Show full title on hover
     li.appendChild(titleSpan);
 
     const actionsDiv = document.createElement('div');
