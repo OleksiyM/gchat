@@ -65,6 +65,10 @@ const dom = {
     maxLengthInput: document.getElementById('max-length-input'),
     googleSearchSwitcher: document.getElementById('google-search-switcher'),
     urlContextSwitcher: document.getElementById('url-context-switcher'),
+    thinkingSwitcher: document.getElementById('thinking-switcher'),
+    dynamicThinkingSwitcher: document.getElementById('dynamic-thinking-switcher'),
+    thinkingBudgetSlider: document.getElementById('thinking-budget-slider'),
+    thinkingBudgetValueDisplay: document.getElementById('thinking-budget-value'),
 
     // Settings Modal
     settingsModal: document.getElementById('settings-modal'),
@@ -193,6 +197,9 @@ const settingsManager = {
         folders: [],
         enableGoogleSearchGrounding: false,
         enableUrlContext: false,
+        enableThinking: false,
+        enableDynamicThinking: false,
+        thinkingBudget: 0,
     },
     load() {
         let storedSettings = {};
@@ -700,6 +707,23 @@ function updateSettingsUI() {
     if (dom.urlContextSwitcher) { // Check if element exists
         dom.urlContextSwitcher.checked = settingsManager.get('enableUrlContext');
     }
+
+    // Thinking controls
+    if (dom.thinkingSwitcher) {
+        dom.thinkingSwitcher.checked = settingsManager.get('enableThinking');
+    }
+    if (dom.dynamicThinkingSwitcher) {
+        dom.dynamicThinkingSwitcher.checked = settingsManager.get('enableDynamicThinking');
+        dom.dynamicThinkingSwitcher.disabled = !settingsManager.get('enableThinking');
+    }
+    if (dom.thinkingBudgetSlider) {
+        const budget = settingsManager.get('thinkingBudget');
+        dom.thinkingBudgetSlider.value = budget;
+        if (dom.thinkingBudgetValueDisplay) {
+            dom.thinkingBudgetValueDisplay.textContent = budget;
+        }
+        dom.thinkingBudgetSlider.disabled = !settingsManager.get('enableThinking') || settingsManager.get('enableDynamicThinking');
+    }
 }
 
 // --- 6. CORE LOGIC ---
@@ -772,6 +796,23 @@ async function getAIResponse(apiKey) {
             topP: parseFloat(dom.topPSlider.value),
             maxOutputTokens: parseInt(dom.maxLengthInput.value, 10),
         };
+
+        const enableThinking = settingsManager.get('enableThinking');
+        const enableDynamicThinking = settingsManager.get('enableDynamicThinking');
+        const thinkingBudgetSetting = settingsManager.get('thinkingBudget');
+
+        if (enableThinking) {
+            const thConfig = {};
+            if (enableDynamicThinking) {
+                thConfig.thinkingBudget = -1; // Dynamic budget
+            } else {
+                thConfig.thinkingBudget = parseInt(thinkingBudgetSetting, 10);
+            }
+            generationConfig.thinkingConfig = thConfig;
+        } else {
+            // Explicitly turn thinking off if enableThinking is false
+            generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        }
 
         // Get system prompt from the text area
         const customPromptText = dom.customSystemPromptText.value.trim();
@@ -1041,6 +1082,45 @@ function setupEventListeners() {
     if (dom.urlContextSwitcher) {
         dom.urlContextSwitcher.addEventListener('change', (event) => {
             settingsManager.set('enableUrlContext', event.target.checked);
+        });
+    }
+
+    // Thinking controls listeners
+    if (dom.thinkingSwitcher) {
+        dom.thinkingSwitcher.addEventListener('change', (event) => {
+            const isEnabled = event.target.checked;
+            settingsManager.set('enableThinking', isEnabled);
+            if (dom.dynamicThinkingSwitcher) {
+                dom.dynamicThinkingSwitcher.disabled = !isEnabled;
+            }
+            if (dom.thinkingBudgetSlider) {
+                // Enable slider only if thinking is enabled AND dynamic thinking is NOT checked
+                dom.thinkingBudgetSlider.disabled = !isEnabled || (dom.dynamicThinkingSwitcher && dom.dynamicThinkingSwitcher.checked);
+            }
+             // If thinking is disabled, also disable dynamic thinking
+            if (!isEnabled && dom.dynamicThinkingSwitcher) {
+                dom.dynamicThinkingSwitcher.checked = false;
+                settingsManager.set('enableDynamicThinking', false);
+            }
+        });
+    }
+
+    if (dom.dynamicThinkingSwitcher) {
+        dom.dynamicThinkingSwitcher.addEventListener('change', (event) => {
+            const isDynamicEnabled = event.target.checked;
+            settingsManager.set('enableDynamicThinking', isDynamicEnabled);
+            if (dom.thinkingBudgetSlider) {
+                // Disable budget slider if dynamic thinking is enabled
+                dom.thinkingBudgetSlider.disabled = isDynamicEnabled;
+            }
+        });
+    }
+
+    if (dom.thinkingBudgetSlider && dom.thinkingBudgetValueDisplay) {
+        dom.thinkingBudgetSlider.addEventListener('input', (event) => {
+            const budget = event.target.value;
+            dom.thinkingBudgetValueDisplay.textContent = budget;
+            settingsManager.set('thinkingBudget', parseInt(budget, 10));
         });
     }
 

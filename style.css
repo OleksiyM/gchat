@@ -499,6 +499,16 @@ pre code.hljs {
     font-size: 0.9rem;
     margin-bottom: 0.5rem;
 }
+/* For aligning label and control (e.g., switch) on the same line */
+.form-group.form-group-inline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.form-group.form-group-inline label:not(.switch) { /* Target the text label, not the switch itself */
+    margin-bottom: 0; /* Remove bottom margin if inline */
+    margin-right: 0.5rem; /* Add some space between label and control */
+}
 .form-group input[type="text"],
 .form-group input[type="password"],
 .form-group input[type="number"],
@@ -788,6 +798,30 @@ input:checked + .slider {
 }
 input:checked + .slider:before {
   transform: translateX(14px);
+}
+input:disabled + .slider {
+  background-color: #ccc; /* Default grey for disabled slider */
+  cursor: not-allowed;
+}
+.dark-theme input:disabled + .slider {
+  background-color: #555; /* Darker grey for dark theme */
+}
+input:disabled + .slider:before {
+  background-color: #eee; /* Lighter circle for disabled slider */
+}
+.dark-theme input:disabled + .slider:before {
+  background-color: #404040; /* Darker circle for dark theme */
+}
+
+/* Styles for range sliders */
+.slider-range {
+    width: 100%; /* Ensure it takes full width within its container */
+    cursor: pointer;
+}
+
+.slider-range:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 
