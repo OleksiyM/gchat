@@ -392,8 +392,11 @@ function populateMessageControls(container, message, messageEl) {
         const popupTemplate = document.getElementById('info-popup-template').content.cloneNode(true);
         const infoPopup = popupTemplate.querySelector('.info-popup');
         infoPopup.innerHTML = `
-            Time: ${message.usage.responseTime}ms<br>
-            Tokens: ${message.usage.tokenCount}<br>
+            Time: ${(message.usage.responseTime / 1000).toFixed(2)} sec<br>
+            Prompt Tokens: ${message.usage.promptTokenCount}<br>
+            Completion Tokens: ${message.usage.completionTokenCount}<br>
+            Other Tokens: ${message.usage.otherTokenCount}<br>
+            Total Tokens: ${message.usage.totalTokenCount}<br>
             Speed: ${message.usage.tokensPerSecond} t/s
         `;
         messageEl.querySelector('.message-content-wrapper').appendChild(infoPopup);
@@ -861,10 +864,11 @@ async function getAIResponse(apiKey) {
         
         const chat = model.startChat({ history: historyForApi });
         const lastUserMessage = dom.userInput.value.trim() || (await dbManager.getMessagesForChat(state.currentChatId)).pop().content;
+
+        const startTime = Date.now(); // Moved startTime here
         const result = await chat.sendMessageStream(lastUserMessage);
 
         let fullResponse = '';
-        const startTime = Date.now();
         aiMessageBody.textContent = ''; // Clear the "..."
 
         for await (const chunk of result.stream) {
@@ -882,12 +886,19 @@ async function getAIResponse(apiKey) {
 
         // Update the message in DB with full content and usage stats
         aiMessage.content = fullResponse;
-        const tokenCount = response.usageMetadata?.totalTokenCount || 0;
+        const promptTokens = response.usageMetadata?.promptTokenCount || 0;
+        const completionTokens = response.usageMetadata?.candidatesTokenCount || 0;
+        const totalTokens = response.usageMetadata?.totalTokenCount || 0; // This is the old 'tokenCount'
         const responseTime = endTime - startTime;
+        const otherTokens = totalTokens - (promptTokens + completionTokens);
+
         aiMessage.usage = {
-            tokenCount: tokenCount,
             responseTime: responseTime,
-            tokensPerSecond: tokenCount > 0 ? (tokenCount / (responseTime / 1000)).toFixed(2) : 0,
+            promptTokenCount: promptTokens,
+            completionTokenCount: completionTokens,
+            otherTokenCount: Math.max(0, otherTokens),
+            totalTokenCount: totalTokens,
+            tokensPerSecond: completionTokens > 0 && responseTime > 0 ? (completionTokens / (responseTime / 1000)).toFixed(2) : 0,
         };
         await dbManager.put('messages', aiMessage);
         
