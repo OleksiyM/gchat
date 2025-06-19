@@ -18,7 +18,7 @@
     <div class="app-container">
         <!-- FR2: CONVERSATION MANAGEMENT (SIDEBAR) -->
         <aside class="sidebar">
-            <header class="panel-header">gChat</header>
+            <header class="panel-header"><span>gChat</span><button id="close-sidebar-btn" class="btn-icon-header" title="Close Panel">&times;</button></header>
             <button id="new-chat-btn" class="btn btn-primary new-chat-btn">New Chat</button>
             <div class="search-bar-container">
                 <input type="search" id="search-chats-input" placeholder="Search chats...">
@@ -35,6 +35,19 @@
         <main class="main-content">
             <div class="chat-header">
                  <div class="chat-header-controls">
+                    <button id="open-sidebar-btn" class="header-btn" title="Open Menu" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <button id="speed-new-chat-btn" class="header-btn" title="New Chat" style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
                     <button id="copy-chat-btn" class="header-btn" title="Copy Chat to Markdown">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                     </button>

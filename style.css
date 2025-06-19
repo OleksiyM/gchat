@@ -107,6 +107,13 @@ html, body {
   overflow-y: auto;
 }
 
+.sidebar.collapsed {
+    width: 0;
+    padding: 0; /* Ensure no padding when collapsed */
+    overflow: hidden;
+    border-right: none; /* Hide border when collapsed if desired */
+}
+
 .main-content {
   flex: 1;
   display: flex;
@@ -891,6 +898,7 @@ input:disabled + .slider:before {
 .toast-notification.info { background-color: #2196F3; }
 .toast-notification.success { background-color: #4CAF50; }
 .toast-notification.error { background-color: #f44336; }
+
 
 /* --- Responsive Design --- */
 @media (max-width: 1024px) {
