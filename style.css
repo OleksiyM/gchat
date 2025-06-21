@@ -549,8 +549,18 @@ pre code.hljs {
 .new-chat-btn {
     width: 100%;
     margin-bottom: 1rem;
-    text-align: left;
+    /* text-align: left; */ /* Will be controlled by flex */
+    display: flex; /* Use flex to align icon and text */
+    align-items: center; /* Vertically align icon and text */
+    gap: 0.5rem; /* Space between icon and text */
 }
+
+.new-chat-btn svg {
+    width: 18px; /* Slightly smaller icon for a button with text */
+    height: 18px;
+    flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
 .search-bar-container {
     margin-bottom: 1rem;
 }
