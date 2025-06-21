@@ -1493,6 +1493,16 @@ function showChatItemMenu(button, chat) {
     menu.querySelector('[data-action="pin"]').style.display = chat.isPinned ? 'none' : 'block';
     menu.querySelector('[data-action="unpin"]').style.display = chat.isPinned ? 'block' : 'none';
 
+    // Configure Archive/Unarchive button
+    const archiveMenuItem = menu.querySelector('[data-action="archive"]');
+    if (chat.isArchived) {
+        archiveMenuItem.textContent = 'Unarchive';
+        archiveMenuItem.dataset.action = 'unarchive';
+    } else {
+        archiveMenuItem.textContent = 'Archive';
+        archiveMenuItem.dataset.action = 'archive';
+    }
+
     // Populate "Move to" sub-menu
     const subMenu = menu.querySelector('.sub-menu');
     const folders = settingsManager.getFolders();
@@ -1520,7 +1530,13 @@ function showChatItemMenu(button, chat) {
     menu.querySelector('[data-action="rename"]').onclick = () => handleChatItemAction('rename', chat);
     menu.querySelector('[data-action="pin"]').onclick = () => handleChatItemAction('pin', chat);
     menu.querySelector('[data-action="unpin"]').onclick = () => handleChatItemAction('unpin', chat);
-    menu.querySelector('[data-action="archive"]').onclick = () => handleChatItemAction('archive', chat);
+    // Listener for Archive/Unarchive will be dynamic due to action change
+    if (menu.querySelector('[data-action="archive"]')) {
+        menu.querySelector('[data-action="archive"]').onclick = () => handleChatItemAction('archive', chat);
+    }
+    if (menu.querySelector('[data-action="unarchive"]')) {
+        menu.querySelector('[data-action="unarchive"]').onclick = () => handleChatItemAction('unarchive', chat);
+    }
     menu.querySelector('[data-action="delete"]').onclick = () => handleChatItemAction('delete', chat);
     menu.querySelector('[data-action="export-md"]').onclick = () => handleChatItemAction('export-md', chat);
     menu.querySelector('[data-action="export-json"]').onclick = () => handleChatItemAction('export-json', chat);
@@ -1557,6 +1573,9 @@ async function handleChatItemAction(action, chat, options = {}) {
             break;
         case 'archive':
             chatUpdate.isArchived = true;
+            break;
+        case 'unarchive': // Added unarchive action
+            chatUpdate.isArchived = false;
             break;
         case 'move':
             chatUpdate.folderId = options.folderId;
