@@ -466,6 +466,10 @@ pre code.hljs {
 }
 
 /* --- Sidebar & Config Panel Common Styles --- */
+.sidebar-footer-actions {
+  margin-top: auto; /* Pushes to bottom on larger screens */
+}
+
 .panel-header {
     display: flex; /* Use flexbox for alignment */
     justify-content: space-between; /* Pushes title and button apart */
@@ -1001,5 +1005,9 @@ input:disabled + .slider:before {
     .chat-window {
         padding: 1rem;
         padding-top: 60px; /* Restored */
+    }
+
+    .sidebar-footer-actions {
+        margin-top: 1rem; /* Adjust as needed for spacing */
     }
 }
