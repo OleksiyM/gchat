@@ -256,7 +256,7 @@ html, body {
 .message-body {
   white-space: pre-wrap;
   word-wrap: break-word;
-  padding: 0.8rem 1rem;
+  padding: 0.7rem 0.9rem; /* Slightly reduced padding */
   border-radius: 8px;
   background-color: var(--message-ai-bg);
   border: 1px solid var(--border-color);
@@ -266,10 +266,27 @@ html, body {
   background-color: var(--message-user-bg);
 }
 
-.message-body p { margin-bottom: 1rem; }
-.message-body ul, .message-body ol { padding-left: 1.5rem; margin-bottom: 1rem; }
-.message-body li { margin-bottom: 0.5rem; }
-.message-body h1, .message-body h2, .message-body h3 { margin-top: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3rem; }
+.message-body p { margin-bottom: 0.5rem; } /* Reduced paragraph bottom margin */
+/* .message-body p:last-child { margin-bottom: 0; } */ /* Replaced by more general rule below */
+.message-body ul, .message-body ol {
+    padding-left: 1.2rem; /* Slightly reduced padding */
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.message-body li { margin-bottom: 0.25rem; } /* Reduced list item bottom margin */
+.message-body li:last-child { margin-bottom: 0; } /* No margin for the last list item in a list */
+
+/* Ensure the very last element in a message body has no bottom margin */
+.message-body > *:last-child {
+    margin-bottom: 0 !important;
+}
+
+.message-body h1, .message-body h2, .message-body h3 {
+    margin-top: 0.8rem;
+    margin-bottom: 0.6rem; /* Reduced heading margins */
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.2rem;
+}
 .message-body blockquote {
     border-left: 3px solid var(--primary-color);
     padding-left: 1rem;
@@ -870,12 +887,12 @@ input:disabled + .slider:before {
     background-color: var(--panel-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 0.5rem 0;
+    padding: 0.25rem 0; /* Reduced top/bottom padding */
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     min-width: 180px;
 }
 .chat-item-menu-item {
-    padding: 0.6rem 1rem;
+    padding: 0.4rem 0.8rem; /* Reduced padding */
     cursor: pointer;
     white-space: nowrap;
 }
@@ -889,11 +906,11 @@ input:disabled + .slider:before {
     display: none;
     position: absolute;
     left: 100%;
-    top: -0.5rem; /* Align with parent item */
+    top: -0.25rem; /* Align with parent item considering reduced padding */
     background-color: var(--panel-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 0.5rem 0;
+    padding: 0.25rem 0; /* Reduced top/bottom padding */
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 .sub-menu-container:hover .sub-menu {
