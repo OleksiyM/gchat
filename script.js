@@ -1238,6 +1238,9 @@ function setupEventListeners() {
     if (dom.speedNewChatBtn) {
         dom.speedNewChatBtn.addEventListener('click', createNewChat);
     }
+
+    // Handle responsive sidebar changes
+    window.addEventListener('resize', updateSidebarStateAndButtons);
 }
 
 function setupGeneralAndChatSettingsListeners() {
@@ -1339,8 +1342,49 @@ async function initializeApp() {
     
     setupEventListeners();
     updateSettingsUI();
+
+    // Initial sidebar state based on screen size
+    if (window.innerWidth <= 768) {
+        dom.sidebar.classList.add('collapsed');
+    } else {
+        dom.sidebar.classList.remove('collapsed'); // Ensure it's open on large screens initially
+    }
+    updateSidebarStateAndButtons(); // Call after initial setup
+
     logger.info('App Initialized and Ready.');
 }
+
+// Function to manage sidebar button visibility and state based on screen size and collapsed status
+function updateSidebarStateAndButtons() {
+    const isSmallScreen = window.innerWidth <= 768;
+
+    // Manage sidebar's own display based on collapsed state first
+    // The .collapsed class (width:0, overflow:hidden, etc.) handles hiding.
+    // The default CSS for .sidebar is display:flex, so it will be visible if not .collapsed.
+    // No explicit dom.sidebar.style.display manipulation is needed here as CSS should handle it.
+
+    if (isSmallScreen) {
+        if (dom.sidebar.classList.contains('collapsed')) {
+            dom.openSidebarBtn.style.display = 'block';
+            dom.speedNewChatBtn.style.display = 'block';
+        } else {
+            // Sidebar is open on small screen
+            dom.openSidebarBtn.style.display = 'none';
+            dom.speedNewChatBtn.style.display = 'none';
+        }
+    } else { // Large screen
+        if (dom.sidebar.classList.contains('collapsed')) {
+            // User explicitly collapsed it on a large screen
+            dom.openSidebarBtn.style.display = 'block';
+            dom.speedNewChatBtn.style.display = 'block';
+        } else {
+            // Sidebar is open on a large screen
+            dom.openSidebarBtn.style.display = 'none';
+            dom.speedNewChatBtn.style.display = 'none';
+        }
+    }
+}
+
 
 async function createNewChat() {
     const newChat = {
