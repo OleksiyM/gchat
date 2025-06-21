@@ -119,7 +119,8 @@ html, body {
   display: flex;
   flex-direction: column;
   position: relative;
-  height: 100%;
+  min-height: 0; /* Added to ensure it can shrink properly in flex layouts */
+  /* height: 100%; */ /* Removed as flex: 1 should handle height in a flex column */
 }
 
 .config-panel {
@@ -144,11 +145,12 @@ html, body {
     justify-content: flex-end;
     align-items: center;
     padding: 8px;
-    position: absolute;
-    top: 0;
-    right: 0;
+    position: absolute; /* Restored */
+    top: 0; /* Restored */
+    right: 0; /* Restored */
     width: 100%;
     z-index: 10;
+    /* flex-shrink: 0; */ /* Removed */
 }
 .chat-header-controls {
     display: flex;
@@ -207,7 +209,7 @@ html, body {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
-  padding-top: 60px; /* Make space for header controls */
+  padding-top: 60px; /* Restored */
 }
 
 .message {
@@ -962,11 +964,21 @@ input:disabled + .slider:before {
         flex-direction: column;
     }
     .sidebar {
-        width: 100%;
+        width: 100%; /* Takes full width when not collapsed */
         height: auto;
         border-right: none;
         border-bottom: 1px solid var(--border-color);
-        display: none; 
+        /* display: none; <-- REMOVED: Visibility will be controlled by .collapsed */
+    }
+    .sidebar.collapsed {
+        width: 0 !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        overflow: hidden !important;
+        visibility: hidden !important;
     }
     .config-panel {
         position: fixed;
@@ -988,6 +1000,6 @@ input:disabled + .slider:before {
     }
     .chat-window {
         padding: 1rem;
-        padding-top: 60px;
+        padding-top: 60px; /* Restored */
     }
 }
