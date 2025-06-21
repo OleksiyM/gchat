@@ -104,7 +104,8 @@ html, body {
   flex-direction: column;
   padding: 1rem;
   transition: width 0.3s ease;
-  overflow-y: auto;
+  height: 100vh; /* Ensure full height */
+  overflow-y: hidden; /* Prevent scroll on sidebar itself */
 }
 
 .sidebar.collapsed {
@@ -467,7 +468,9 @@ pre code.hljs {
 
 /* --- Sidebar & Config Panel Common Styles --- */
 .sidebar-footer-actions {
-  margin-top: auto; /* Pushes to bottom on larger screens */
+  margin-top: auto; /* Pushes to bottom in flex layout */
+  padding: 1rem 0 0 0; /* Add padding top, keep other paddings if needed from parent or set explicitly */
+  flex-shrink: 0; /* Prevent this container from shrinking */
 }
 
 .panel-header {
@@ -587,6 +590,14 @@ pre code.hljs {
 .search-bar-container {
     margin-bottom: 1rem;
 }
+
+#chat-history-container {
+    flex-grow: 1; /* Allow this container to take up available space */
+    overflow-y: auto; /* Enable scrolling for chat history */
+    min-height: 0; /* Ensure it can shrink correctly in flex layout */
+    padding-bottom: 1rem; /* Add some padding at the bottom so content doesn't hide behind footer */
+}
+
 #search-chats-input {
     width: 100%;
     padding: 0.5rem;
