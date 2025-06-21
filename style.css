@@ -980,10 +980,11 @@ input:disabled + .slider:before {
     }
     .sidebar {
         width: 100%; /* Takes full width when not collapsed */
-        height: auto;
+        height: 100vh; /* Ensure full viewport height */
         border-right: none;
         border-bottom: 1px solid var(--border-color);
         /* display: none; <-- REMOVED: Visibility will be controlled by .collapsed */
+        /* display: flex and flex-direction: column are inherited, allowing footer to be pushed down */
     }
     .sidebar.collapsed {
         width: 0 !important;
