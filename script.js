@@ -917,21 +917,57 @@ async function getAIResponse(apiKey) {
 
         // Prepare chat history for the API
         let dbHistory = await dbManager.getMessagesForChat(state.currentChatId);
-        // Exclude the last user message, which is the current prompt, and the placeholder AI message
-        dbHistory = dbHistory.slice(0, -1); 
-        
+        // Exclude the last user message (current prompt) and any placeholder AI message from this initial fetch
+        dbHistory = dbHistory.slice(0, -1);
+
+        // Apply context window limit first
         const contextLimit = settingsManager.get('contextWindowSize');
         const isUnlimited = settingsManager.get('unlimitedContext');
         if (!isUnlimited && dbHistory.length > contextLimit) {
             dbHistory = dbHistory.slice(-contextLimit);
         }
 
-        const historyForApi = dbHistory.map(msg => ({
-            role: msg.role,
-            parts: [{ text: msg.content }]
-        }));
+        // Sanitize history for the API: ensure alternating user/model roles
+        const sanitizedHistoryForApi = [];
+        if (dbHistory.length > 0) {
+            // Ensure the history starts with a user message if it's not empty
+            let firstUserIndex = -1;
+            for (let i = 0; i < dbHistory.length; i++) {
+                if (dbHistory[i].role === 'user') {
+                    firstUserIndex = i;
+                    break;
+                }
+            }
+
+            if (firstUserIndex !== -1) {
+                dbHistory = dbHistory.slice(firstUserIndex); // Start from the first user message
+
+                let lastRole = null;
+                for (const msg of dbHistory) {
+                    if (msg.role === 'user') {
+                        sanitizedHistoryForApi.push({ role: 'user', parts: [{ text: msg.content }] });
+                        lastRole = 'user';
+                    } else if (msg.role === 'model') {
+                        // Only add model message if the last message was from a user
+                        if (lastRole === 'user') {
+                            sanitizedHistoryForApi.push({ role: 'model', parts: [{ text: msg.content }] });
+                            lastRole = 'model';
+                        } else if (sanitizedHistoryForApi.length > 0 && lastRole === 'model') {
+                            // If the last message was also a model, replace the previous model message with this one
+                            sanitizedHistoryForApi[sanitizedHistoryForApi.length - 1] = { role: 'model', parts: [{ text: msg.content }] };
+                            // lastRole remains 'model'
+                        }
+                        // If lastRole is null (e.g. history started with multiple model messages, which is now prevented by slice), this model message is skipped.
+                    }
+                }
+            }
+        }
         
-        const chat = model.startChat({ history: historyForApi });
+        // If, after sanitization, the last message is a model message and the API expects a user message next (which it does for chat.sendMessageStream),
+        // and we are about to send a user message, this is fine.
+        // If the sanitized history is empty, it's also fine.
+
+        const chat = model.startChat({ history: sanitizedHistoryForApi });
         const lastUserMessage = dom.userInput.value.trim() || (await dbManager.getMessagesForChat(state.currentChatId)).pop().content;
 
         const startTime = Date.now(); // Moved startTime here
