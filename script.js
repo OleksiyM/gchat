@@ -1317,6 +1317,18 @@ function setupEventListeners() {
     if (importSettingsInput) {
         importSettingsInput.addEventListener('change', handleImportSettings);
     }
+
+    // Export All Chats
+    const exportAllChatsBtn = document.getElementById('export-all-chats-btn');
+    if (exportAllChatsBtn) {
+        exportAllChatsBtn.addEventListener('click', handleExportAllChats);
+    }
+
+    // Import Chats
+    const importChatsInput = document.getElementById('import-chats-input');
+    if (importChatsInput) {
+        importChatsInput.addEventListener('change', handleImportChats);
+    }
 }
 
 function setupGeneralAndChatSettingsListeners() {
@@ -1743,15 +1755,31 @@ async function handleCopyChat() {
 async function handleExportChat(format, chatId = state.currentChatId) {
     if (!chatId) return;
     const chat = await dbManager.get('chats', chatId);
-    const safeTitle = chat.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    if (!chat) {
+        showNotification('Chat not found for export.', 'error');
+        return;
+    }
+
+    // Sanitize and truncate title for filename
+    let safeTitle = chat.title.replace(/[^a-zA-Z0-9_]/g, '_').replace(/__+/g, '_');
+    if (safeTitle.length > 50) { // Truncate if too long
+        safeTitle = safeTitle.substring(0, 50);
+    }
+    if (safeTitle.startsWith('_')) safeTitle = safeTitle.substring(1);
+    if (safeTitle.endsWith('_')) safeTitle = safeTitle.slice(0, -1);
+    if (!safeTitle) safeTitle = 'chat'; // Fallback if title was all special characters
+
+    const filenamePrefix = `gChat_chat_${safeTitle}`;
     
     try {
         if (format === 'md') {
             const content = await formatChatToMarkdown(chatId);
-            downloadFile(content, `${safeTitle}.md`, 'text/markdown');
+            downloadFile(content, `${filenamePrefix}.md`, 'text/markdown');
         } else if (format === 'json') {
-            const content = await formatChatToJson(chatId);
-            downloadFile(content, `${safeTitle}.json`, 'application/json');
+            // formatChatToJson will now return a list with a single chat object
+            const chatDataList = await formatChatToJson(chatId);
+            const content = JSON.stringify(chatDataList, null, 2);
+            downloadFile(content, `${filenamePrefix}.json`, 'application/json');
         }
     } catch (err) {
         logger.error(`Failed to export chat as ${format}:`, err);
@@ -1766,9 +1794,29 @@ async function formatChatToMarkdown(chatId) {
 
 async function formatChatToJson(chatId) {
     const chat = await dbManager.get('chats', chatId);
+    if (!chat) throw new Error(`Chat with ID ${chatId} not found.`);
+
     const messages = await dbManager.getMessagesForChat(chatId);
-    const exportData = { ...chat, messages };
-    return JSON.stringify(exportData, null, 2);
+
+    const chatData = {
+        id: chat.id,
+        title: chat.title,
+        createdAt: chat.createdAt,
+        folderId: chat.folderId,
+        isPinned: chat.isPinned,
+        isArchived: chat.isArchived,
+        messages: messages.map(msg => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp,
+            modelUsed: msg.modelUsed,
+            isEdited: msg.isEdited,
+            // Exclude 'usage' as per all chats export logic
+        }))
+    };
+    // Return as a list containing a single chat object
+    return [chatData];
 }
 
 function downloadFile(content, filename, mimeType) {
@@ -1811,6 +1859,59 @@ function handleInputModalOk() {
 }
 
 // --- IMPORT/EXPORT SETTINGS ---
+
+async function handleExportAllChats() {
+    logger.info('Exporting all chats...');
+    try {
+        const allChatsFromDB = await dbManager.getAll('chats');
+        if (!allChatsFromDB || allChatsFromDB.length === 0) {
+            showNotification('No chats to export.', 'info');
+            return;
+        }
+
+        const exportableChats = [];
+        for (const chat of allChatsFromDB) {
+            const messages = await dbManager.getMessagesForChat(chat.id);
+            // We only want to export chat-related data, so we'll create a new object
+            // that doesn't include any live state or UI-specific properties if they existed.
+            const chatData = {
+                id: chat.id, // Keep original ID for potential future re-import/matching logic
+                title: chat.title,
+                createdAt: chat.createdAt,
+                folderId: chat.folderId,
+                isPinned: chat.isPinned,
+                isArchived: chat.isArchived,
+                // IMPORTANT: Add any other persistent chat properties here if they exist
+                // e.g., lastModifiedAt, customMetadata, etc.
+                messages: messages.map(msg => ({
+                    id: msg.id, // Keep original ID
+                    role: msg.role,
+                    content: msg.content,
+                    timestamp: msg.timestamp,
+                    modelUsed: msg.modelUsed,
+                    isEdited: msg.isEdited,
+                    // IMPORTANT: Add any other persistent message properties here
+                    // We are deliberately excluding 'usage' for now as it's more of a session/runtime stat
+                    // and might not be relevant for re-import or could be very large.
+                    // If 'usage' needs to be exported, add it here.
+                }))
+            };
+            exportableChats.push(chatData);
+        }
+
+        const jsonString = JSON.stringify(exportableChats, null, 2);
+        const now = new Date();
+        const filename = `gChat_All_Chats_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}.json`;
+
+        downloadFile(jsonString, filename, 'application/json');
+        showNotification('All chats exported successfully!', 'success');
+
+    } catch (err) {
+        logger.error('Failed to export all chats:', err);
+        showNotification('An error occurred while exporting all chats.', 'error');
+    }
+}
+
 async function handleExportSettings() {
     logger.info('Exporting settings...');
     try {
@@ -1919,6 +2020,136 @@ async function handleImportSettings(event) {
     reader.onerror = () => {
         showNotification('Failed to read the settings file.', 'error');
         if (importSettingsInput) importSettingsInput.value = ''; // Reset file input
+    };
+    reader.readAsText(file);
+}
+
+async function handleImportChats(event) {
+    logger.info('Importing chats...');
+    const file = event.target.files[0];
+    const importChatsInput = document.getElementById('import-chats-input');
+
+    if (!file) {
+        if (importChatsInput) importChatsInput.value = ''; // Reset file input
+        return;
+    }
+
+    // Confirmation dialog
+    const userConfirmation = confirm(
+        "This will import chats and their messages into the application. " +
+        "If an imported chat has the same ID as an existing chat, the imported chat will be assigned a new unique ID to prevent overwriting your current data. " +
+        "This process does not import application settings (theme, API keys, etc.).\n\n" +
+        "Do you want to proceed with importing chats?"
+    );
+
+    if (!userConfirmation) {
+        if (importChatsInput) importChatsInput.value = ''; // Reset file input
+        showNotification('Chat import cancelled by user.', 'info');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const importedData = JSON.parse(e.target.result);
+
+            // Validate structure: should be a list of chats
+            if (!Array.isArray(importedData)) {
+                throw new Error('Invalid file format: Expected an array of chats.');
+            }
+
+            let importedCount = 0;
+            let skippedCount = 0;
+
+            for (const importedChat of importedData) {
+                // Basic validation for each chat object
+                if (!importedChat || typeof importedChat.title !== 'string' || !Array.isArray(importedChat.messages) || !importedChat.id) {
+                    logger.warn('Skipping invalid chat object during import:', importedChat);
+                    skippedCount++;
+                    continue;
+                }
+
+                // Check if a chat with this ID already exists
+                const existingChat = await dbManager.get('chats', importedChat.id);
+                let newChatId = importedChat.id;
+
+                if (existingChat) {
+                    // Simple strategy: generate a new ID for the imported chat to avoid conflict.
+                    // More complex strategies could involve asking the user to overwrite, merge, or skip.
+                    newChatId = crypto.randomUUID();
+                    logger.info(`Chat with ID ${importedChat.id} already exists. Importing with new ID ${newChatId}.`);
+                     // Alternatively, skip:
+                    // logger.info(`Chat with ID ${importedChat.id} already exists. Skipping.`);
+                    // skippedCount++;
+                    // continue;
+                }
+
+                const chatToStore = {
+                    id: newChatId,
+                    title: importedChat.title,
+                    createdAt: importedChat.createdAt || Date.now(), // Fallback for missing createdAt
+                    folderId: importedChat.folderId || null,
+                    isPinned: importedChat.isPinned || false,
+                    isArchived: importedChat.isArchived || false,
+                    // Add any other relevant chat properties from the import
+                };
+
+                await dbManager.add('chats', chatToStore);
+
+                for (const importedMessage of importedChat.messages) {
+                    if (!importedMessage || !importedMessage.id || typeof importedMessage.content !== 'string' || !importedMessage.role) {
+                        logger.warn('Skipping invalid message object during import for chat:', chatToStore.title, importedMessage);
+                        continue;
+                    }
+
+                    // Check if message ID already exists (less likely to conflict if chat ID is new, but good practice)
+                    let newMessageId = importedMessage.id;
+                    const existingMessage = await dbManager.get('messages', importedMessage.id);
+                    if(existingMessage && existingMessage.chatId !== newChatId) { // Conflict if message ID exists AND belongs to a different chat
+                        newMessageId = crypto.randomUUID();
+                    } else if (existingMessage && existingMessage.chatId === newChatId) {
+                        // If message ID exists for the *same* chat, we might be re-importing.
+                        // For now, let's assume we overwrite/update it. Or skip if preferred.
+                        // If we generated a new chat ID, this path shouldn't be taken often for message ID collision.
+                    }
+
+
+                    const messageToStore = {
+                        id: newMessageId,
+                        chatId: newChatId, // Link to the new/existing chat ID
+                        role: importedMessage.role,
+                        content: importedMessage.content,
+                        timestamp: importedMessage.timestamp || Date.now(),
+                        modelUsed: importedMessage.modelUsed || null,
+                        isEdited: importedMessage.isEdited || false,
+                        // Add any other relevant message properties
+                    };
+                    // Using 'put' for messages in case of re-importing a chat that was partially imported before
+                    // or if we decide to allow overwriting messages within an existing chat.
+                    await dbManager.put('messages', messageToStore);
+                }
+                importedCount++;
+            }
+
+            await renderChatHistory(); // Refresh the UI
+            if (importedCount > 0) {
+                showNotification(`${importedCount} chat(s) imported successfully. ${skippedCount > 0 ? skippedCount + ' chat(s) skipped.' : ''}`, 'success');
+            } else if (skippedCount > 0) {
+                showNotification(`No chats were imported. ${skippedCount} chat(s) skipped due to errors or existing IDs.`, 'warn');
+            } else {
+                 showNotification('No new chats found in the file to import.', 'info');
+            }
+
+        } catch (err) {
+            logger.error('Failed to import chats:', err);
+            showNotification(`Error importing chats: ${err.message}. Please ensure the file is a valid gChat export.`, 'error');
+        } finally {
+            if (importChatsInput) importChatsInput.value = ''; // Reset file input
+        }
+    };
+    reader.onerror = () => {
+        showNotification('Failed to read the chat import file.', 'error');
+        if (importChatsInput) importChatsInput.value = ''; // Reset file input
     };
     reader.readAsText(file);
 }
