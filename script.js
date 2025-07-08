@@ -110,6 +110,15 @@ const dom = {
 
     // Notification
     notificationContainer: document.querySelector('.notification-container'),
+
+    // Custom Input Modal
+    customInputModal: document.getElementById('custom-input-modal'),
+    customInputModalTitle: document.getElementById('custom-input-modal-title'),
+    customInputModalLabel: document.getElementById('custom-input-modal-label'),
+    customInputModalField: document.getElementById('custom-input-modal-field'),
+    customInputModalOkBtn: document.getElementById('custom-input-modal-ok-btn'),
+    customInputModalCancelBtn: document.getElementById('custom-input-modal-cancel-btn'),
+    customInputModalCloseBtn: document.getElementById('custom-input-modal-close-btn'),
 };
 
 // Notification System
@@ -602,13 +611,15 @@ function renderFolderListSettings() {
         const nameSpan = item.querySelector('.folder-name-text');
         nameSpan.textContent = folder.name;
 
-        item.querySelector('.edit-folder-btn').onclick = async () => {
-            const newName = prompt('Enter new name for folder:', folder.name);
-            if (newName && newName.trim() !== folder.name) {
-                settingsManager.updateFolder(folder.id, newName.trim());
-                await renderChatHistory();
-                renderFolderListSettings();
-            }
+        item.querySelector('.edit-folder-btn').onclick = () => { // No longer async here
+            showInputModal('Rename Folder', 'Enter new folder name:', folder.name, async (newName) => {
+                if (newName && newName.trim() !== folder.name) {
+                    settingsManager.updateFolder(folder.id, newName.trim());
+                    await renderChatHistory(); // Ensure this is awaited
+                    renderFolderListSettings(); // Re-render the folder list in settings
+                    showNotification('Folder renamed.', 'success');
+                }
+            });
         };
 
         item.querySelector('.delete-folder-btn').onclick = async () => {
@@ -1277,6 +1288,23 @@ function setupEventListeners() {
 
     // Handle responsive sidebar changes
     window.addEventListener('resize', updateSidebarStateAndButtons);
+
+    // Custom Input Modal Listeners
+    dom.customInputModalOkBtn.addEventListener('click', handleInputModalOk);
+    dom.customInputModalCancelBtn.addEventListener('click', hideInputModal);
+    dom.customInputModalCloseBtn.addEventListener('click', hideInputModal);
+    dom.customInputModal.addEventListener('click', (e) => { // Click on overlay to close
+        if (e.target === dom.customInputModal) {
+            hideInputModal();
+        }
+    });
+    dom.customInputModalField.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            handleInputModalOk();
+        } else if (e.key === 'Escape') {
+            hideInputModal();
+        }
+    });
 }
 
 function setupGeneralAndChatSettingsListeners() {
@@ -1641,10 +1669,15 @@ async function handleChatItemAction(action, chat, options = {}) {
 
     switch (action) {
         case 'rename':
-            const newTitle = prompt('Enter new title for chat:', chat.title);
-            if (newTitle && newTitle.trim() !== chat.title) chatUpdate.title = newTitle.trim();
-            else return;
-            break;
+            showInputModal('Rename Chat', 'Enter new title:', chat.title, async (newTitle) => {
+                if (newTitle && newTitle.trim() !== chat.title) {
+                    chatUpdate.title = newTitle.trim();
+                    await dbManager.put('chats', chatUpdate);
+                    await renderChatHistory();
+                    showNotification('Chat renamed.', 'success');
+                }
+            });
+            return; // Return because the rest of the logic is async in the callback
         case 'pin':
             chatUpdate.isPinned = true;
             break;
@@ -1736,6 +1769,33 @@ function downloadFile(content, filename, mimeType) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+// --- CUSTOM INPUT MODAL ---
+let currentInputModalCallback = null;
+
+function showInputModal(title, label, currentValue = '', callback) {
+    dom.customInputModalTitle.textContent = title;
+    dom.customInputModalLabel.textContent = label;
+    dom.customInputModalField.value = currentValue;
+    dom.customInputModal.classList.add('visible');
+    dom.customInputModalField.focus();
+    dom.customInputModalField.select(); // Select current text for easy replacement
+    currentInputModalCallback = callback;
+}
+
+function hideInputModal() {
+    dom.customInputModal.classList.remove('visible');
+    dom.customInputModalField.value = '';
+    currentInputModalCallback = null;
+}
+
+function handleInputModalOk() {
+    const value = dom.customInputModalField.value; // Keep trim() in the handler if needed, or let callback decide
+    if (currentInputModalCallback) {
+        currentInputModalCallback(value); // Pass the value to the callback
+    }
+    hideInputModal();
 }
 
 // Start the application

@@ -935,6 +935,36 @@ input:disabled + .slider:before {
 }
 
 
+/* --- Custom Input Modal --- */
+/* Uses .modal-overlay and .modal-content styles already defined */
+/* Additional styling for the input modal specifically, if needed */
+#custom-input-modal .modal-content {
+    max-width: 400px; /* Or as desired */
+    height: auto;
+}
+
+#custom-input-modal .modal-body {
+    padding: 1.5rem;
+    flex-direction: column; /* Ensure items stack vertically */
+}
+
+#custom-input-modal-label {
+    margin-bottom: 0.5rem;
+    display: block; /* Ensure it takes full width */
+    font-weight: 500; /* Make label a bit bolder */
+}
+
+#custom-input-modal-field {
+    margin-bottom: 1rem; /* Space between input and buttons */
+}
+
+#custom-input-modal .modal-body div { /* Targeting the button container */
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+
 /* --- Notifications --- */
 .notification-container {
     position: fixed;
