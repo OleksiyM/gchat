@@ -518,10 +518,19 @@ pre code.hljs {
     color: var(--text-color);
     cursor: pointer;
     transition: background-color 0.2s;
+    font-size: 0.9rem; /* Ensure consistent font size for buttons */
+    line-height: 1.5; /* Improve text centering and height consistency */
 }
 .btn:hover, button:hover {
     background-color: var(--hover-bg);
 }
+
+/* Ensure labels styled as buttons also get consistent padding and line height */
+label.btn {
+    padding: 0.5rem 1rem;
+    line-height: 1.5;
+}
+
 .btn-primary {
     background-color: var(--primary-color);
     color: var(--bg-color);
@@ -557,7 +566,8 @@ pre code.hljs {
 .form-group input[type="password"],
 .form-group input[type="number"],
 .form-group select,
-.form-group textarea {
+.form-group textarea,
+#custom-input-modal-field /* Ensure modal input field shares styling */ {
     width: 100%;
     padding: 0.5rem;
     border: 1px solid var(--border-color);
