@@ -275,6 +275,24 @@
             </div>
         </div>
     </div>
+
+    <!-- Custom Input Modal -->
+    <div id="custom-input-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px; height: auto;">
+            <div class="modal-header">
+                <h2 id="custom-input-modal-title">Input Required</h2>
+                <button id="custom-input-modal-close-btn" class="btn">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; flex-direction: column;">
+                <label id="custom-input-modal-label" for="custom-input-modal-field" style="margin-bottom: 0.5rem; display: block;">Enter value:</label>
+                <input type="text" id="custom-input-modal-field" class="form-control" style="margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button id="custom-input-modal-cancel-btn" class="btn">Cancel</button>
+                    <button id="custom-input-modal-ok-btn" class="btn btn-primary">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <!-- TEMPLATES -->
     <template id="message-template">
