@@ -1054,7 +1054,6 @@ async function getAIResponse(apiKey) {
         const chat = model.startChat({ history: sanitizedHistoryForApi });
         const lastUserMessage = dom.userInput.value.trim() || (await dbManager.getMessagesForChat(state.currentChatId)).pop().content;
 
-        const startTime = Date.now(); // Moved startTime here
         const result = await chat.sendMessageStream(lastUserMessage);
 
         let fullResponse = '';
