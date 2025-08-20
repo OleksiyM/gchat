@@ -433,7 +433,13 @@ function createMessageElement(message) {
         const thinkingContent = document.createElement('div');
         thinkingContent.className = 'thinking-content';
 
-        if (message.thinkingSteps && message.thinkingSteps.length > 0) {
+        if (message.thinkingContent) {
+            const codeBlock = document.createElement('pre');
+            const codeElement = document.createElement('code');
+            codeElement.textContent = message.thinkingContent;
+            codeBlock.appendChild(codeElement);
+            thinkingContent.appendChild(codeBlock);
+        } else if (message.thinkingSteps && message.thinkingSteps.length > 0) {
             message.thinkingSteps.forEach(step => {
                 const stepDiv = document.createElement('div');
                 stepDiv.className = 'thinking-step';
@@ -1040,35 +1046,46 @@ async function getAIResponse(apiKey) {
         const result = await chat.sendMessageStream(lastUserMessage);
 
         let fullResponse = '';
+        let thinkingContent = '';
         aiMessageBody.textContent = ''; // Clear the "..."
-        aiMessage.thinkingSteps = []; // Initialize thinking steps array
+        aiMessage.thinkingSteps = []; // Keep for other potential tool calls
 
+        // Per Google AI documentation for the "thinking" feature:
+        // Process the stream to capture both final text and intermediate tool code.
         for await (const chunk of result.stream) {
-            // New logic to process chunks with text and function calls
-            if (chunk.candidates && chunk.candidates.length > 0) {
-                const candidate = chunk.candidates[0];
-                if (candidate.content && candidate.content.parts) {
-                    for (const part of candidate.content.parts) {
-                        if (part.text) {
-                            fullResponse += part.text;
-                        } else if (part.functionCall) {
-                            // Sanitize function call arguments for display
-                            const sanitizedArgs = {};
-                            for (const key in part.functionCall.args) {
-                                sanitizedArgs[key] = part.functionCall.args[key];
-                            }
-                            aiMessage.thinkingSteps.push({
-                                name: part.functionCall.name,
-                                args: sanitizedArgs
-                            });
-                        }
-                    }
+            const chunkText = chunk.text();
+            if (chunkText) {
+                fullResponse += chunkText;
+            }
+
+            // The documentation refers to a `toolCode` property.
+            // While the exact property on the chunk object might be different in the library,
+            // this logic attempts to find and aggregate any non-text, non-function-call content
+            // that constitutes the thinking process.
+            if (chunk.candidates && chunk.candidates[0].content && chunk.candidates[0].content.parts) {
+                const part = chunk.candidates[0].content.parts[0];
+                // A thinking step might not have a functionCall name, but just text-like content in its first part.
+                // This is an interpretation of the simplified `toolCode` property in the docs.
+                if (part.functionCall) {
+                     aiMessage.thinkingSteps.push({
+                        name: part.functionCall.name,
+                        args: part.functionCall.args
+                    });
+                } else if (!part.text) {
+                    // If a part is not text and not a standard function call, it could be the thinking process.
+                    // We will stringify it for inspection.
+                    try {
+                        thinkingContent += JSON.stringify(part, null, 2);
+                    } catch (e) { /* ignore circular refs */ }
                 }
             }
             aiMessageBody.textContent = fullResponse; // Render raw text for performance
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
         }
-        
+
+        // Save the captured thinking content
+        aiMessage.thinkingContent = thinkingContent.trim() || null;
+
         // Finalize response
         const response = await result.response;
         const endTime = Date.now();
