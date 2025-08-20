@@ -917,7 +917,23 @@ async function getAIResponse(apiKey) {
     dom.chatWindow.appendChild(aiMessageElement);
     dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
+    let timerIntervalId = null;
     try {
+        const startTime = Date.now();
+        // --- Live Status Indicator ---
+        aiMessageBody.innerHTML = `
+            <div class="live-status-indicator">
+                <div class="spinner"></div>
+                <span class="status-text">Working...</span>
+                <span class="timer">0.00s</span>
+            </div>
+        `;
+        const statusText = aiMessageBody.querySelector('.status-text');
+        const timerText = aiMessageBody.querySelector('.timer');
+        timerIntervalId = setInterval(() => {
+            timerText.textContent = `${((Date.now() - startTime) / 1000).toFixed(2)}s`;
+        }, 100);
+
         // Dynamically import the SDK
         const { GoogleGenerativeAI } = await import(config.geminiApiUrl);
         const genAI = new GoogleGenerativeAI(apiKey);
@@ -1047,21 +1063,39 @@ async function getAIResponse(apiKey) {
         aiMessage.thinkingSteps = [];
         aiMessage.thinkingContent = null;
 
+        let thinkingContent = '';
+        let isFinalAnswerStarted = false;
+
         // Process the stream based on the discovered `thought: true` flag.
         for await (const chunk of result.stream) {
             if (chunk.candidates?.[0]?.content?.parts) {
                 for (const part of chunk.candidates[0].content.parts) {
                     if (part.thought === true && part.text) {
                         thinkingContent += part.text;
+                        if (statusText.textContent !== 'Thinking...') {
+                            statusText.textContent = 'Thinking...';
+                        }
                     } else if (part.text) {
+                        if (!isFinalAnswerStarted) {
+                            isFinalAnswerStarted = true;
+                            aiMessageBody.innerHTML = ''; // Clear status indicator
+                        }
                         fullResponse += part.text;
-                        aiMessageBody.textContent = fullResponse; // Live update for final answer
+                        renderMarkdown(aiMessageBody, fullResponse); // Live render markdown
                     } else if (part.functionCall) {
                         aiMessage.thinkingSteps.push(part.functionCall);
+                        if (statusText.textContent !== 'Thinking...') {
+                            statusText.textContent = 'Thinking...';
+                        }
                     }
                 }
             }
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
+        }
+
+        // Final cleanup in case the response was empty
+        if (!isFinalAnswerStarted) {
+            aiMessageBody.innerHTML = '';
         }
 
         // Save the captured thinking content
@@ -1143,6 +1177,7 @@ async function getAIResponse(apiKey) {
         aiMessageBody.innerHTML = `<p style="color:var(--stale-color);"><strong>Error:</strong> ${errorMessage}</p>`;
         showNotification(`API Error: ${errorMessage}`, 'error', 5000);
     } finally {
+        clearInterval(timerIntervalId); // Stop the timer
         state.isGenerating = false;
         dom.sendButton.disabled = false;
         dom.sendButton.classList.remove('sending');
