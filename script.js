@@ -1062,7 +1062,6 @@ async function getAIResponse(apiKey) {
         aiMessage.thinkingSteps = [];
         aiMessage.thinkingContent = null;
 
-        let thinkingContent = '';
         let isFinalAnswerStarted = false;
 
         // Process the stream based on the discovered `thought: true` flag.
