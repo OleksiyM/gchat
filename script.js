@@ -1000,11 +1000,29 @@ async function getAIResponse(apiKey) {
         
         renderMarkdown(aiMessageBody, fullResponse); // Render final text as markdown
 
+        // --- Response Validation and Finalization ---
+        let finalContent = fullResponse;
+        let wasBlocked = false;
+
+        // Check for blocking or other non-OK finish reasons
+        if (response.promptFeedback?.blockReason) {
+            finalContent = `[Blocked] Reason: ${response.promptFeedback.blockReason}`;
+            wasBlocked = true;
+            logger.warn('Response was blocked:', response.promptFeedback);
+        } else if (fullResponse.trim() === '') {
+            finalContent = '[Empty Response] The model returned an empty response.';
+            logger.warn('Received an empty but unblocked response from the model.');
+        }
+
+        if (wasBlocked || fullResponse.trim() === '') {
+             aiMessageBody.innerHTML = `<p style="color:var(--stale-color);"><strong>Warning:</strong> ${finalContent}</p>`;
+        }
+
         // Update the message in DB with full content and usage stats
-        aiMessage.content = fullResponse;
+        aiMessage.content = finalContent; // Store the potentially modified content
         const promptTokens = response.usageMetadata?.promptTokenCount || 0;
         const completionTokens = response.usageMetadata?.candidatesTokenCount || 0;
-        const totalTokens = response.usageMetadata?.totalTokenCount || 0; // This is the old 'tokenCount'
+        const totalTokens = response.usageMetadata?.totalTokenCount || 0;
         const responseTime = endTime - startTime;
         const otherTokens = totalTokens - (promptTokens + completionTokens);
 
@@ -1024,7 +1042,15 @@ async function getAIResponse(apiKey) {
 
     } catch (error) {
         logger.error('Gemini API Error:', error);
-        const errorMessage = error.toString();
+        // Attempt to parse a more detailed error message if available
+        let errorMessage = error.toString();
+        if (error.message) {
+            errorMessage = error.message;
+        }
+        // In some cases, the API error details are in a nested object
+        if (error.error && error.error.message) {
+            errorMessage = error.error.message;
+        }
         aiMessageBody.innerHTML = `<p style="color:var(--stale-color);"><strong>Error:</strong> ${errorMessage}</p>`;
         showNotification(`API Error: ${errorMessage}`, 'error', 5000);
     } finally {
