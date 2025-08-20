@@ -417,6 +417,47 @@ function createMessageElement(message) {
         editedIndicator.textContent = '(edited)';
     }
 
+    // --- Render Thinking Process ---
+    if (message.usage && message.usage.thoughtsTokenCount > 0 && message.thinkingSteps && message.thinkingSteps.length > 0) {
+        const thinkingDetails = document.createElement('details');
+        thinkingDetails.className = 'thinking-process';
+
+        const thinkingSummary = document.createElement('summary');
+        thinkingSummary.className = 'thinking-summary';
+        thinkingSummary.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 5px;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            <span>Thinking (${(message.usage.responseTime / 1000).toFixed(2)}s, ${message.usage.thoughtsTokenCount} tokens)</span>
+        `;
+        thinkingDetails.appendChild(thinkingSummary);
+
+        const thinkingContent = document.createElement('div');
+        thinkingContent.className = 'thinking-content';
+
+        message.thinkingSteps.forEach(step => {
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'thinking-step';
+            const toolName = step.name;
+            const toolArgs = JSON.stringify(step.args, null, 2);
+
+            const toolHeader = document.createElement('div');
+            toolHeader.className = 'tool-call-header';
+            toolHeader.innerHTML = `Tool Call: <strong>${toolName}</strong>`;
+
+            const codeBlock = document.createElement('pre');
+            const codeElement = document.createElement('code');
+            codeElement.textContent = toolArgs;
+            codeBlock.appendChild(codeElement);
+
+            stepDiv.appendChild(toolHeader);
+            stepDiv.appendChild(codeBlock);
+            thinkingContent.appendChild(stepDiv);
+        });
+
+        thinkingDetails.appendChild(thinkingContent);
+        // Insert after the message header but before the body
+        messageEl.querySelector('.message-content-wrapper').insertBefore(thinkingDetails, messageBody);
+    }
+
     populateMessageControls(controlsContainer, message, messageEl);
     
     return messageEl;
@@ -986,11 +1027,31 @@ async function getAIResponse(apiKey) {
 
         let fullResponse = '';
         aiMessageBody.textContent = ''; // Clear the "..."
+        aiMessage.thinkingSteps = []; // Initialize thinking steps array
 
         for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-            fullResponse += chunkText;
-            aiMessageBody.textContent = fullResponse; // Render raw text for performance during stream
+            // New logic to process chunks with text and function calls
+            if (chunk.candidates && chunk.candidates.length > 0) {
+                const candidate = chunk.candidates[0];
+                if (candidate.content && candidate.content.parts) {
+                    for (const part of candidate.content.parts) {
+                        if (part.text) {
+                            fullResponse += part.text;
+                        } else if (part.functionCall) {
+                            // Sanitize function call arguments for display
+                            const sanitizedArgs = {};
+                            for (const key in part.functionCall.args) {
+                                sanitizedArgs[key] = part.functionCall.args[key];
+                            }
+                            aiMessage.thinkingSteps.push({
+                                name: part.functionCall.name,
+                                args: sanitizedArgs
+                            });
+                        }
+                    }
+                }
+            }
+            aiMessageBody.textContent = fullResponse; // Render raw text for performance
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
         }
         
