@@ -917,23 +917,7 @@ async function getAIResponse(apiKey) {
     dom.chatWindow.appendChild(aiMessageElement);
     dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
 
-    let timerIntervalId = null;
     try {
-        const startTime = Date.now();
-        // --- Live Status Indicator ---
-        aiMessageBody.innerHTML = `
-            <div class="live-status-indicator">
-                <div class="spinner"></div>
-                <span class="status-text">Working...</span>
-                <span class="timer">0.00s</span>
-            </div>
-        `;
-        const statusText = aiMessageBody.querySelector('.status-text');
-        const timerText = aiMessageBody.querySelector('.timer');
-        timerIntervalId = setInterval(() => {
-            timerText.textContent = `${((Date.now() - startTime) / 1000).toFixed(2)}s`;
-        }, 100);
-
         // Dynamically import the SDK
         const { GoogleGenerativeAI } = await import(config.geminiApiUrl);
         const genAI = new GoogleGenerativeAI(apiKey);
@@ -965,8 +949,6 @@ async function getAIResponse(apiKey) {
             } else {
                 // If disableThinking is false AND enableThinking is false,
                 // no thinkingConfig should be added.
-                // If generationConfig could have a pre-existing thinkingConfig, clear it:
-                // delete generationConfig.thinkingConfig; // Uncomment if necessary
             }
         }
 
@@ -975,8 +957,6 @@ async function getAIResponse(apiKey) {
         let systemInstruction = null;
         if (customPromptText) {
             systemInstruction = { parts: [{ text: customPromptText }] };
-            // Optionally, if you want to reflect that a custom/modified prompt is in use:
-            // dom.systemPromptSelect.value = 'default'; // or add a specific <option> for "Custom"
         }
         
         let tools = [];
@@ -1001,20 +981,16 @@ async function getAIResponse(apiKey) {
 
         // Prepare chat history for the API
         let dbHistory = await dbManager.getMessagesForChat(state.currentChatId);
-        // Exclude the last user message (current prompt) and any placeholder AI message from this initial fetch
         dbHistory = dbHistory.slice(0, -1);
 
-        // Apply context window limit first
         const contextLimit = settingsManager.get('contextWindowSize');
         const isUnlimited = settingsManager.get('unlimitedContext');
         if (!isUnlimited && dbHistory.length > contextLimit) {
             dbHistory = dbHistory.slice(-contextLimit);
         }
 
-        // Sanitize history for the API: ensure alternating user/model roles
         const sanitizedHistoryForApi = [];
         if (dbHistory.length > 0) {
-            // Ensure the history starts with a user message if it's not empty
             let firstUserIndex = -1;
             for (let i = 0; i < dbHistory.length; i++) {
                 if (dbHistory[i].role === 'user') {
@@ -1024,36 +1000,28 @@ async function getAIResponse(apiKey) {
             }
 
             if (firstUserIndex !== -1) {
-                dbHistory = dbHistory.slice(firstUserIndex); // Start from the first user message
-
+                dbHistory = dbHistory.slice(firstUserIndex);
                 let lastRole = null;
                 for (const msg of dbHistory) {
                     if (msg.role === 'user') {
                         sanitizedHistoryForApi.push({ role: 'user', parts: [{ text: msg.content }] });
                         lastRole = 'user';
                     } else if (msg.role === 'model') {
-                        // Only add model message if the last message was from a user
                         if (lastRole === 'user') {
                             sanitizedHistoryForApi.push({ role: 'model', parts: [{ text: msg.content }] });
                             lastRole = 'model';
                         } else if (sanitizedHistoryForApi.length > 0 && lastRole === 'model') {
-                            // If the last message was also a model, replace the previous model message with this one
                             sanitizedHistoryForApi[sanitizedHistoryForApi.length - 1] = { role: 'model', parts: [{ text: msg.content }] };
-                            // lastRole remains 'model'
                         }
-                        // If lastRole is null (e.g. history started with multiple model messages, which is now prevented by slice), this model message is skipped.
                     }
                 }
             }
         }
         
-        // If, after sanitization, the last message is a model message and the API expects a user message next (which it does for chat.sendMessageStream),
-        // and we are about to send a user message, this is fine.
-        // If the sanitized history is empty, it's also fine.
-
         const chat = model.startChat({ history: sanitizedHistoryForApi });
         const lastUserMessage = dom.userInput.value.trim() || (await dbManager.getMessagesForChat(state.currentChatId)).pop().content;
 
+        const startTime = Date.now();
         const result = await chat.sendMessageStream(lastUserMessage);
 
         let fullResponse = '';
@@ -1062,49 +1030,27 @@ async function getAIResponse(apiKey) {
         aiMessage.thinkingSteps = [];
         aiMessage.thinkingContent = null;
 
-        let isFinalAnswerStarted = false;
-
-        // Process the stream based on the discovered `thought: true` flag.
         for await (const chunk of result.stream) {
             if (chunk.candidates?.[0]?.content?.parts) {
                 for (const part of chunk.candidates[0].content.parts) {
                     if (part.thought === true && part.text) {
                         thinkingContent += part.text;
-                        if (statusText.textContent !== 'Thinking...') {
-                            statusText.textContent = 'Thinking...';
-                        }
                     } else if (part.text) {
-                        if (!isFinalAnswerStarted) {
-                            isFinalAnswerStarted = true;
-                            aiMessageBody.innerHTML = ''; // Clear status indicator
-                        }
                         fullResponse += part.text;
-                        renderMarkdown(aiMessageBody, fullResponse); // Live render markdown
+                        aiMessageBody.textContent = fullResponse;
                     } else if (part.functionCall) {
                         aiMessage.thinkingSteps.push(part.functionCall);
-                        if (statusText.textContent !== 'Thinking...') {
-                            statusText.textContent = 'Thinking...';
-                        }
                     }
                 }
             }
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
         }
 
-        // Final cleanup in case the response was empty
-        if (!isFinalAnswerStarted) {
-            aiMessageBody.innerHTML = '';
-        }
-
-        // Save the captured thinking content
         aiMessage.thinkingContent = thinkingContent.trim() || null;
 
-        // Finalize response
         const response = await result.response;
         const endTime = Date.now();
 
-        // After streaming, check the final response for function calls if none were found during streaming.
-        // This captures tools like Google Search which might only appear in the final aggregated response.
         if (aiMessage.thinkingSteps.length === 0 && response.candidates?.[0]?.content?.parts) {
             for (const part of response.candidates[0].content.parts) {
                 if (part.functionCall) {
@@ -1116,13 +1062,11 @@ async function getAIResponse(apiKey) {
             }
         }
 
-        renderMarkdown(aiMessageBody, fullResponse); // Render final text as markdown
+        renderMarkdown(aiMessageBody, fullResponse);
 
-        // --- Response Validation and Finalization ---
         let finalContent = fullResponse;
         let wasBlocked = false;
 
-        // Check for blocking or other non-OK finish reasons
         if (response.promptFeedback?.blockReason) {
             finalContent = `[Blocked] Reason: ${response.promptFeedback.blockReason}`;
             wasBlocked = true;
@@ -1136,46 +1080,40 @@ async function getAIResponse(apiKey) {
              aiMessageBody.innerHTML = `<p style="color:var(--stale-color);"><strong>Warning:</strong> ${finalContent}</p>`;
         }
 
-        // Update the message in DB with full content and usage stats
-        aiMessage.content = finalContent; // Store the potentially modified content
+        aiMessage.content = finalContent;
         const promptTokens = response.usageMetadata?.promptTokenCount || 0;
         const completionTokens = response.usageMetadata?.candidatesTokenCount || 0;
         const totalTokens = response.usageMetadata?.totalTokenCount || 0;
-        const thoughtsTokens = response.usageMetadata?.thoughtsTokenCount || 0; // Correctly read the thinking tokens
+        const thoughtsTokens = response.usageMetadata?.thoughtsTokenCount || 0;
         const responseTime = endTime - startTime;
-        // Recalculate other tokens, accounting for thinking tokens now
         const otherTokens = totalTokens - (promptTokens + completionTokens + thoughtsTokens);
 
         aiMessage.usage = {
             responseTime: responseTime,
             promptTokenCount: promptTokens,
             completionTokenCount: completionTokens,
-            thoughtsTokenCount: thoughtsTokens, // Store the value
+            thoughtsTokenCount: thoughtsTokens,
             otherTokenCount: Math.max(0, otherTokens),
             totalTokenCount: totalTokens,
             tokensPerSecond: completionTokens > 0 && responseTime > 0 ? (completionTokens / (responseTime / 1000)).toFixed(2) : 0,
         };
         await dbManager.put('messages', aiMessage);
         
-        // Refresh the message element to include all controls and info
         const finalElement = createMessageElement(aiMessage);
         aiMessageElement.replaceWith(finalElement);
 
     } catch (error) {
         logger.error('Gemini API Error:', error);
-        // Attempt to parse a more detailed error message if available
         let errorMessage = error.toString();
         if (error.message) {
             errorMessage = error.message;
         }
-        // In some cases, the API error details are in a nested object
         if (error.error && error.error.message) {
             errorMessage = error.error.message;
         }
         aiMessageBody.innerHTML = `<p style="color:var(--stale-color);"><strong>Error:</strong> ${errorMessage}</p>`;
         showNotification(`API Error: ${errorMessage}`, 'error', 5000);
     } finally {
-        clearInterval(timerIntervalId); // Stop the timer
         state.isGenerating = false;
         dom.sendButton.disabled = false;
         dom.sendButton.classList.remove('sending');
