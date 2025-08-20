@@ -418,7 +418,7 @@ function createMessageElement(message) {
     }
 
     // --- Render Thinking Process ---
-    if (message.usage && message.usage.thoughtsTokenCount > 0 && message.thinkingSteps && message.thinkingSteps.length > 0) {
+    if (message.usage && message.usage.thoughtsTokenCount > 0) {
         const thinkingDetails = document.createElement('details');
         thinkingDetails.className = 'thinking-process';
 
@@ -433,25 +433,31 @@ function createMessageElement(message) {
         const thinkingContent = document.createElement('div');
         thinkingContent.className = 'thinking-content';
 
-        message.thinkingSteps.forEach(step => {
-            const stepDiv = document.createElement('div');
-            stepDiv.className = 'thinking-step';
-            const toolName = step.name;
-            const toolArgs = JSON.stringify(step.args, null, 2);
+        if (message.thinkingSteps && message.thinkingSteps.length > 0) {
+            message.thinkingSteps.forEach(step => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'thinking-step';
+                const toolName = step.name;
+                const toolArgs = JSON.stringify(step.args, null, 2);
 
-            const toolHeader = document.createElement('div');
-            toolHeader.className = 'tool-call-header';
-            toolHeader.innerHTML = `Tool Call: <strong>${toolName}</strong>`;
+                const toolHeader = document.createElement('div');
+                toolHeader.className = 'tool-call-header';
+                toolHeader.innerHTML = `Tool Call: <strong>${toolName}</strong>`;
 
-            const codeBlock = document.createElement('pre');
-            const codeElement = document.createElement('code');
-            codeElement.textContent = toolArgs;
-            codeBlock.appendChild(codeElement);
+                const codeBlock = document.createElement('pre');
+                const codeElement = document.createElement('code');
+                codeElement.textContent = toolArgs;
+                codeBlock.appendChild(codeElement);
 
-            stepDiv.appendChild(toolHeader);
-            stepDiv.appendChild(codeBlock);
-            thinkingContent.appendChild(stepDiv);
-        });
+                stepDiv.appendChild(toolHeader);
+                stepDiv.appendChild(codeBlock);
+                thinkingContent.appendChild(stepDiv);
+            });
+        } else {
+            const noStepsP = document.createElement('p');
+            noStepsP.innerHTML = '<i>The model performed internal thinking without explicit tool calls.</i>';
+            thinkingContent.appendChild(noStepsP);
+        }
 
         thinkingDetails.appendChild(thinkingContent);
         // Insert after the message header but before the body
@@ -1058,7 +1064,20 @@ async function getAIResponse(apiKey) {
         // Finalize response
         const response = await result.response;
         const endTime = Date.now();
-        
+
+        // After streaming, check the final response for function calls if none were found during streaming.
+        // This captures tools like Google Search which might only appear in the final aggregated response.
+        if (aiMessage.thinkingSteps.length === 0 && response.candidates?.[0]?.content?.parts) {
+            for (const part of response.candidates[0].content.parts) {
+                if (part.functionCall) {
+                     aiMessage.thinkingSteps.push({
+                        name: part.functionCall.name,
+                        args: part.functionCall.args
+                    });
+                }
+            }
+        }
+
         renderMarkdown(aiMessageBody, fullResponse); // Render final text as markdown
 
         // --- Response Validation and Finalization ---
