@@ -470,6 +470,34 @@ function createMessageElement(message) {
         messageEl.querySelector('.message-content-wrapper').insertBefore(thinkingDetails, messageBody);
     }
 
+    // --- START DEBUG DISPLAY ---
+    if (message.debugStreamChunks && message.debugStreamChunks.length > 0) {
+        const debugDetails = document.createElement('details');
+        debugDetails.style.marginTop = '10px';
+        debugDetails.style.border = '1px dashed red';
+        debugDetails.style.padding = '5px';
+        debugDetails.open = true; // Default to open
+
+        const debugSummary = document.createElement('summary');
+        debugSummary.textContent = 'Debug: Raw Stream Data';
+        debugSummary.style.cursor = 'pointer';
+        debugDetails.appendChild(debugSummary);
+
+        message.debugStreamChunks.forEach(chunkStr => {
+            const pre = document.createElement('pre');
+            pre.style.background = '#2d2e30';
+            pre.style.color = '#e8eaed';
+            pre.style.padding = '5px';
+            pre.style.margin = '5px 0';
+            pre.style.borderRadius = '4px';
+            pre.textContent = chunkStr;
+            debugDetails.appendChild(pre);
+        });
+
+        messageEl.querySelector('.message-content-wrapper').appendChild(debugDetails);
+    }
+    // --- END DEBUG DISPLAY ---
+
     populateMessageControls(controlsContainer, message, messageEl);
     
     return messageEl;
@@ -914,6 +942,9 @@ async function getAIResponse(apiKey) {
         content: '...',
         timestamp: Date.now(),
         modelUsed: modelUsed,
+        thinkingSteps: [],
+        thinkingContent: null,
+        debugStreamChunks: [], // Add for debugging
         usage: null
     };
     const aiMessageElement = createMessageElement(aiMessage);
@@ -1050,30 +1081,33 @@ async function getAIResponse(apiKey) {
         aiMessageBody.textContent = ''; // Clear the "..."
         aiMessage.thinkingSteps = []; // Keep for other potential tool calls
 
-        // Per Google AI documentation for the "thinking" feature:
         // Process the stream to capture both final text and intermediate tool code.
         for await (const chunk of result.stream) {
+            // --- START DEBUG CAPTURE ---
+            try {
+                const simplifiedChunk = {
+                    candidates: chunk.candidates,
+                    usageMetadata: chunk.usageMetadata
+                };
+                aiMessage.debugStreamChunks.push(JSON.stringify(simplifiedChunk, null, 2));
+            } catch (e) {
+                aiMessage.debugStreamChunks.push(`[Error stringifying chunk: ${e.message}]`);
+            }
+            // --- END DEBUG CAPTURE ---
+
             const chunkText = chunk.text();
             if (chunkText) {
                 fullResponse += chunkText;
             }
 
-            // The documentation refers to a `toolCode` property.
-            // While the exact property on the chunk object might be different in the library,
-            // this logic attempts to find and aggregate any non-text, non-function-call content
-            // that constitutes the thinking process.
             if (chunk.candidates && chunk.candidates[0].content && chunk.candidates[0].content.parts) {
                 const part = chunk.candidates[0].content.parts[0];
-                // A thinking step might not have a functionCall name, but just text-like content in its first part.
-                // This is an interpretation of the simplified `toolCode` property in the docs.
                 if (part.functionCall) {
                      aiMessage.thinkingSteps.push({
                         name: part.functionCall.name,
                         args: part.functionCall.args
                     });
                 } else if (!part.text) {
-                    // If a part is not text and not a standard function call, it could be the thinking process.
-                    // We will stringify it for inspection.
                     try {
                         thinkingContent += JSON.stringify(part, null, 2);
                     } catch (e) { /* ignore circular refs */ }
