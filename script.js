@@ -1026,23 +1026,36 @@ async function getAIResponse(apiKey) {
 
         let fullResponse = '';
         let thinkingContent = '';
-        aiMessageBody.textContent = ''; // Clear the "..."
+        let isFirstChunk = true;
         aiMessage.thinkingSteps = [];
         aiMessage.thinkingContent = null;
 
         for await (const chunk of result.stream) {
+            let hasNewContent = false;
             if (chunk.candidates?.[0]?.content?.parts) {
                 for (const part of chunk.candidates[0].content.parts) {
                     if (part.thought === true && part.text) {
                         thinkingContent += part.text;
+                        hasNewContent = true;
                     } else if (part.text) {
                         fullResponse += part.text;
-                        aiMessageBody.textContent = fullResponse;
+                        hasNewContent = true;
                     } else if (part.functionCall) {
                         aiMessage.thinkingSteps.push(part.functionCall);
                     }
                 }
             }
+
+            if (hasNewContent) {
+                if (isFirstChunk) {
+                    aiMessageBody.textContent = ''; // Clear the '...' placeholder
+                    isFirstChunk = false;
+                }
+                // Live-stream both thinking and final answer, separated for clarity.
+                const separator = thinkingContent && fullResponse ? '\n\n---\n\n' : '';
+                aiMessageBody.textContent = thinkingContent + separator + fullResponse;
+            }
+
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
         }
 
