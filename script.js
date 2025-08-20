@@ -434,11 +434,7 @@ function createMessageElement(message) {
         thinkingContent.className = 'thinking-content';
 
         if (message.thinkingContent) {
-            const codeBlock = document.createElement('pre');
-            const codeElement = document.createElement('code');
-            codeElement.textContent = message.thinkingContent;
-            codeBlock.appendChild(codeElement);
-            thinkingContent.appendChild(codeBlock);
+            renderMarkdown(thinkingContent, message.thinkingContent);
         } else if (message.thinkingSteps && message.thinkingSteps.length > 0) {
             message.thinkingSteps.forEach(step => {
                 const stepDiv = document.createElement('div');
@@ -469,34 +465,6 @@ function createMessageElement(message) {
         // Insert after the message header but before the body
         messageEl.querySelector('.message-content-wrapper').insertBefore(thinkingDetails, messageBody);
     }
-
-    // --- START DEBUG DISPLAY ---
-    if (message.debugStreamChunks && message.debugStreamChunks.length > 0) {
-        const debugDetails = document.createElement('details');
-        debugDetails.style.marginTop = '10px';
-        debugDetails.style.border = '1px dashed red';
-        debugDetails.style.padding = '5px';
-        debugDetails.open = true; // Default to open
-
-        const debugSummary = document.createElement('summary');
-        debugSummary.textContent = 'Debug: Raw Stream Data';
-        debugSummary.style.cursor = 'pointer';
-        debugDetails.appendChild(debugSummary);
-
-        message.debugStreamChunks.forEach(chunkStr => {
-            const pre = document.createElement('pre');
-            pre.style.background = '#2d2e30';
-            pre.style.color = '#e8eaed';
-            pre.style.padding = '5px';
-            pre.style.margin = '5px 0';
-            pre.style.borderRadius = '4px';
-            pre.textContent = chunkStr;
-            debugDetails.appendChild(pre);
-        });
-
-        messageEl.querySelector('.message-content-wrapper').appendChild(debugDetails);
-    }
-    // --- END DEBUG DISPLAY ---
 
     populateMessageControls(controlsContainer, message, messageEl);
     
@@ -942,9 +910,6 @@ async function getAIResponse(apiKey) {
         content: '...',
         timestamp: Date.now(),
         modelUsed: modelUsed,
-        thinkingSteps: [],
-        thinkingContent: null,
-        debugStreamChunks: [], // Add for debugging
         usage: null
     };
     const aiMessageElement = createMessageElement(aiMessage);
@@ -1079,41 +1044,23 @@ async function getAIResponse(apiKey) {
         let fullResponse = '';
         let thinkingContent = '';
         aiMessageBody.textContent = ''; // Clear the "..."
-        aiMessage.thinkingSteps = []; // Keep for other potential tool calls
+        aiMessage.thinkingSteps = [];
+        aiMessage.thinkingContent = null;
 
-        // Process the stream to capture both final text and intermediate tool code.
+        // Process the stream based on the discovered `thought: true` flag.
         for await (const chunk of result.stream) {
-            // --- START DEBUG CAPTURE ---
-            try {
-                const simplifiedChunk = {
-                    candidates: chunk.candidates,
-                    usageMetadata: chunk.usageMetadata
-                };
-                aiMessage.debugStreamChunks.push(JSON.stringify(simplifiedChunk, null, 2));
-            } catch (e) {
-                aiMessage.debugStreamChunks.push(`[Error stringifying chunk: ${e.message}]`);
-            }
-            // --- END DEBUG CAPTURE ---
-
-            const chunkText = chunk.text();
-            if (chunkText) {
-                fullResponse += chunkText;
-            }
-
-            if (chunk.candidates && chunk.candidates[0].content && chunk.candidates[0].content.parts) {
-                const part = chunk.candidates[0].content.parts[0];
-                if (part.functionCall) {
-                     aiMessage.thinkingSteps.push({
-                        name: part.functionCall.name,
-                        args: part.functionCall.args
-                    });
-                } else if (!part.text) {
-                    try {
-                        thinkingContent += JSON.stringify(part, null, 2);
-                    } catch (e) { /* ignore circular refs */ }
+            if (chunk.candidates?.[0]?.content?.parts) {
+                for (const part of chunk.candidates[0].content.parts) {
+                    if (part.thought === true && part.text) {
+                        thinkingContent += part.text;
+                    } else if (part.text) {
+                        fullResponse += part.text;
+                        aiMessageBody.textContent = fullResponse; // Live update for final answer
+                    } else if (part.functionCall) {
+                        aiMessage.thinkingSteps.push(part.functionCall);
+                    }
                 }
             }
-            aiMessageBody.textContent = fullResponse; // Render raw text for performance
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
         }
 
