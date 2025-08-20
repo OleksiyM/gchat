@@ -939,7 +939,7 @@ async function getAIResponse(apiKey) {
             if (enableThinking) {
                 const enableDynamicThinking = settingsManager.get('enableDynamicThinking');
                 const thinkingBudgetSetting = settingsManager.get('thinkingBudget');
-                const thConfig = {};
+                const thConfig = { includeThoughts: true }; // Tell the API to send the thinking content
                 if (enableDynamicThinking) {
                     thConfig.thinkingBudget = -1; // Dynamic budget
                 } else {
