@@ -1063,3 +1063,38 @@ input:disabled + .slider:before {
         margin-top: 1rem; /* Adjust as needed for spacing */
     }
 }
+
+/* --- Thinking Process Display --- */
+.thinking-process {
+    margin-top: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.thinking-summary {
+    padding: 8px 12px;
+    background-color: var(--secondary-bg-color);
+    cursor: pointer;
+    outline: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.thinking-content {
+    padding: 8px 12px;
+    background-color: var(--main-bg-color);
+    font-size: 0.85rem;
+}
+.tool-call-header {
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: var(--text-color);
+}
+.thinking-step pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: var(--code-bg);
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 4px;
+}
