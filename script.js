@@ -504,14 +504,22 @@ function populateMessageControls(container, message, messageEl) {
         
         const popupTemplate = document.getElementById('info-popup-template').content.cloneNode(true);
         const infoPopup = popupTemplate.querySelector('.info-popup');
-        infoPopup.innerHTML = `
+        
+        let usageHTML = `
             Time: ${(message.usage.responseTime / 1000).toFixed(2)} sec<br>
             Prompt Tokens: ${message.usage.promptTokenCount}<br>
             Completion Tokens: ${message.usage.completionTokenCount}<br>
+        `;
+        if (message.usage.thoughtsTokenCount > 0) {
+            usageHTML += `Thinking Tokens: ${message.usage.thoughtsTokenCount}<br>`;
+        }
+        usageHTML += `
             Other Tokens: ${message.usage.otherTokenCount}<br>
             Total Tokens: ${message.usage.totalTokenCount}<br>
             Speed: ${message.usage.tokensPerSecond} t/s
         `;
+        infoPopup.innerHTML = usageHTML;
+
         messageEl.querySelector('.message-content-wrapper').appendChild(infoPopup);
         
         infoBtn.onclick = (e) => {
@@ -1103,13 +1111,16 @@ async function getAIResponse(apiKey) {
         const promptTokens = response.usageMetadata?.promptTokenCount || 0;
         const completionTokens = response.usageMetadata?.candidatesTokenCount || 0;
         const totalTokens = response.usageMetadata?.totalTokenCount || 0;
+        const thoughtsTokens = response.usageMetadata?.thoughtsTokenCount || 0; // Correctly read the thinking tokens
         const responseTime = endTime - startTime;
-        const otherTokens = totalTokens - (promptTokens + completionTokens);
+        // Recalculate other tokens, accounting for thinking tokens now
+        const otherTokens = totalTokens - (promptTokens + completionTokens + thoughtsTokens);
 
         aiMessage.usage = {
             responseTime: responseTime,
             promptTokenCount: promptTokens,
             completionTokenCount: completionTokens,
+            thoughtsTokenCount: thoughtsTokens, // Store the value
             otherTokenCount: Math.max(0, otherTokens),
             totalTokenCount: totalTokens,
             tokensPerSecond: completionTokens > 0 && responseTime > 0 ? (completionTokens / (responseTime / 1000)).toFixed(2) : 0,
