@@ -70,6 +70,7 @@ const dom = {
     urlContextSwitcher: document.getElementById('url-context-switcher'),
     thinkingSwitcher: document.getElementById('thinking-switcher'),
     dynamicThinkingSwitcher: document.getElementById('dynamic-thinking-switcher'),
+    includeThoughtsSwitcher: document.getElementById('include-thoughts-switcher'),
     thinkingBudgetSlider: document.getElementById('thinking-budget-slider'),
     thinkingBudgetValueDisplay: document.getElementById('thinking-budget-value'),
     disableThinkingSwitcher: document.getElementById('disable-thinking-switcher'),
@@ -212,6 +213,7 @@ const settingsManager = {
         enableUrlContext: false,
         enableThinking: false,
         enableDynamicThinking: false,
+        includeThoughts: true,
         thinkingBudget: 0,
         disableThinking: false,
     },
@@ -418,7 +420,7 @@ function createMessageElement(message) {
     }
 
     // --- Render Thinking Process ---
-    if (message.usage && message.usage.thoughtsTokenCount > 0) {
+    if (settingsManager.get('includeThoughts') && message.usage && message.usage.thoughtsTokenCount > 0) {
         const thinkingDetails = document.createElement('details');
         thinkingDetails.className = 'thinking-process';
 
@@ -855,6 +857,10 @@ function updateSettingsUI() {
         }
         dom.thinkingBudgetSlider.disabled = !settingsManager.get('enableThinking') || settingsManager.get('enableDynamicThinking');
     }
+
+    if (dom.includeThoughtsSwitcher) {
+        dom.includeThoughtsSwitcher.checked = settingsManager.get('includeThoughts');
+    }
 }
 
 // --- 6. CORE LOGIC ---
@@ -939,7 +945,7 @@ async function getAIResponse(apiKey) {
             if (enableThinking) {
                 const enableDynamicThinking = settingsManager.get('enableDynamicThinking');
                 const thinkingBudgetSetting = settingsManager.get('thinkingBudget');
-                const thConfig = { includeThoughts: true }; // Tell the API to send the thinking content
+                const thConfig = { includeThoughts: settingsManager.get('includeThoughts') }; // Tell the API to send the thinking content
                 if (enableDynamicThinking) {
                     thConfig.thinkingBudget = -1; // Dynamic budget
                 } else {
@@ -1034,7 +1040,7 @@ async function getAIResponse(apiKey) {
             let hasNewContent = false;
             if (chunk.candidates?.[0]?.content?.parts) {
                 for (const part of chunk.candidates[0].content.parts) {
-                    if (part.thought === true && part.text) {
+                    if (part.thought === true && part.text && settingsManager.get('includeThoughts')) {
                         thinkingContent += part.text;
                         hasNewContent = true;
                     } else if (part.text) {
@@ -1052,8 +1058,12 @@ async function getAIResponse(apiKey) {
                     isFirstChunk = false;
                 }
                 // Live-stream both thinking and final answer, separated for clarity.
-                const separator = thinkingContent && fullResponse ? '\n\n---\n\n' : '';
-                aiMessageBody.textContent = thinkingContent + separator + fullResponse;
+                if (settingsManager.get('includeThoughts')) {
+                    const separator = thinkingContent && fullResponse ? '\n\n---\n\n' : '';
+                    aiMessageBody.textContent = thinkingContent + separator + fullResponse;
+                } else {
+                    aiMessageBody.textContent = fullResponse;
+                }
             }
 
             dom.chatWindow.scrollTop = dom.chatWindow.scrollHeight;
@@ -1359,6 +1369,12 @@ function setupEventListeners() {
     if (dom.disableThinkingSwitcher) {
         dom.disableThinkingSwitcher.addEventListener('change', (event) => {
             settingsManager.set('disableThinking', event.target.checked);
+        });
+    }
+
+    if (dom.includeThoughtsSwitcher) {
+        dom.includeThoughtsSwitcher.addEventListener('change', (event) => {
+            settingsManager.set('includeThoughts', event.target.checked);
         });
     }
 
@@ -1997,262 +2013,80 @@ async function handleExportAllChats() {
             };
             exportableChats.push(chatData);
         }
-
-        const jsonString = JSON.stringify(exportableChats, null, 2);
-        const now = new Date();
-        const filename = `gChat_All_Chats_${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}-${now.getSeconds().toString().padStart(2, '0')}.json`;
-
-        downloadFile(jsonString, filename, 'application/json');
-        showNotification('All chats exported successfully!', 'success');
-
+        const content = JSON.stringify({ version: 1, chats: exportableChats, settings: state.settings }, null, 2);
+        downloadFile(content, 'gChat_all_chats_and_settings.json', 'application/json');
+        showNotification('All chats and settings exported!', 'success');
     } catch (err) {
-        logger.error('Failed to export all chats:', err);
-        showNotification('An error occurred while exporting all chats.', 'error');
+        logger.error('Failed to export all data:', err);
+        showNotification('Could not export data.', 'error');
     }
-}
-
-async function handleExportSettings() {
-    logger.info('Exporting settings...');
-    try {
-        const localStorageSettingsRaw = localStorage.getItem('gChatSettings');
-        let localStorageSettings = {};
-        if (localStorageSettingsRaw) {
-            try {
-                localStorageSettings = JSON.parse(localStorageSettingsRaw);
-            } catch (e) {
-                logger.error('Failed to parse localStorage settings during export:', e);
-                showNotification('Error: Could not parse local settings. Export aborted.', 'error');
-                return;
-            }
-        }
-
-        const systemPrompts = await dbManager.getAll('system_prompts');
-
-        const settingsToExport = {
-            localStorageSettings: localStorageSettings,
-            indexedDbSystemPrompts: systemPrompts
-        };
-
-        const jsonString = JSON.stringify(settingsToExport, null, 2);
-
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-        const day = now.getDate().toString().padStart(2, '0');
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        const seconds = now.getSeconds().toString().padStart(2, '0');
-        const filename = `gChat_Settings_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.json`;
-
-        downloadFile(jsonString, filename, 'application/json');
-        showNotification('Settings exported successfully!', 'success');
-
-    } catch (err) {
-        logger.error('Failed to export settings:', err);
-        showNotification('An error occurred while exporting settings.', 'error');
-    }
-}
-
-async function handleImportSettings(event) {
-    logger.info('Importing settings...');
-    const file = event.target.files[0];
-    const importSettingsInput = document.getElementById('import-settings-input');
-
-    if (!file) {
-        if (importSettingsInput) importSettingsInput.value = ''; // Reset file input
-        return;
-    }
-
-    if (!confirm("Importing settings will overwrite all existing settings (except chat history). Are you sure you want to continue?")) {
-        if (importSettingsInput) importSettingsInput.value = ''; // Reset file input
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const importedData = JSON.parse(e.target.result);
-
-            // Validate structure
-            if (!importedData || typeof importedData.localStorageSettings !== 'object' || !Array.isArray(importedData.indexedDbSystemPrompts)) {
-                showNotification('Invalid settings file format. Import aborted.', 'error');
-                if (importSettingsInput) importSettingsInput.value = ''; // Reset file input
-                return;
-            }
-
-            // Import Local Storage Settings
-            localStorage.setItem('gChatSettings', JSON.stringify(importedData.localStorageSettings));
-            logger.info('Local storage settings imported.');
-
-            // Import IndexedDB System Prompts
-            await dbManager.clear('system_prompts');
-            logger.info('Cleared existing system prompts from IndexedDB.');
-            for (const prompt of importedData.indexedDbSystemPrompts) {
-                // Ensure prompt has an id, or generate one if missing (for older exports perhaps)
-                if (!prompt.id) prompt.id = crypto.randomUUID();
-                await dbManager.add('system_prompts', prompt);
-            }
-            logger.info('Imported new system prompts into IndexedDB.');
-
-            // Reload settings and refresh UI
-            settingsManager.load(); // Reloads from localStorage into state.settings
-            applyTheme(settingsManager.get('theme')); // Re-apply theme immediately
-            updateSettingsUI(); // Updates all settings UI elements based on new state.settings and DB prompts
-            await updateSystemPromptDropdowns(); // Specifically re-populates prompt dropdowns from DB
-            await renderChatHistory(); // Refresh chat history (e.g. for folder changes)
-
-            // If a chat was open, re-render it to reflect any model/config changes potentially
-            if (state.currentChatId) {
-                await renderChat(state.currentChatId);
-            }
-
-
-            showNotification('Settings imported successfully! The app will now reflect the new settings.', 'success');
-
-        } catch (err) {
-            logger.error('Failed to import settings:', err);
-            showNotification(`Error importing settings: ${err.message}. Please ensure the file is a valid gChat settings export.`, 'error');
-        } finally {
-            if (importSettingsInput) importSettingsInput.value = ''; // Reset file input
-        }
-    };
-    reader.onerror = () => {
-        showNotification('Failed to read the settings file.', 'error');
-        if (importSettingsInput) importSettingsInput.value = ''; // Reset file input
-    };
-    reader.readAsText(file);
 }
 
 async function handleImportChats(event) {
-    logger.info('Importing chats...');
     const file = event.target.files[0];
-    const importChatsInput = document.getElementById('import-chats-input');
-
-    if (!file) {
-        if (importChatsInput) importChatsInput.value = ''; // Reset file input
-        return;
-    }
-
-    // Confirmation dialog
-    const userConfirmation = confirm(
-        "This will import chats and their messages into the application. " +
-        "If an imported chat has the same ID as an existing chat, the imported chat will be assigned a new unique ID to prevent overwriting your current data. " +
-        "This process does not import application settings (theme, API keys, etc.).\n\n" +
-        "Do you want to proceed with importing chats?"
-    );
-
-    if (!userConfirmation) {
-        if (importChatsInput) importChatsInput.value = ''; // Reset file input
-        showNotification('Chat import cancelled by user.', 'info');
-        return;
-    }
+    if (!file) return;
 
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
-            const importedData = JSON.parse(e.target.result);
-
-            // Validate structure: should be a list of chats
-            if (!Array.isArray(importedData)) {
-                throw new Error('Invalid file format: Expected an array of chats.');
-            }
-
-            let importedCount = 0;
-            let skippedCount = 0;
-
-            for (const importedChat of importedData) {
-                // Basic validation for each chat object
-                if (!importedChat || typeof importedChat.title !== 'string' || !Array.isArray(importedChat.messages) || !importedChat.id) {
-                    logger.warn('Skipping invalid chat object during import:', importedChat);
-                    skippedCount++;
-                    continue;
-                }
-
-                // Check if a chat with this ID already exists
-                const existingChat = await dbManager.get('chats', importedChat.id);
-                let newChatId = importedChat.id;
-
-                if (existingChat) {
-                    // Simple strategy: generate a new ID for the imported chat to avoid conflict.
-                    // More complex strategies could involve asking the user to overwrite, merge, or skip.
-                    newChatId = crypto.randomUUID();
-                    logger.info(`Chat with ID ${importedChat.id} already exists. Importing with new ID ${newChatId}.`);
-                     // Alternatively, skip:
-                    // logger.info(`Chat with ID ${importedChat.id} already exists. Skipping.`);
-                    // skippedCount++;
-                    // continue;
-                }
-
-                const chatToStore = {
-                    id: newChatId,
-                    title: importedChat.title,
-                    createdAt: importedChat.createdAt || Date.now(), // Fallback for missing createdAt
-                    folderId: importedChat.folderId || null,
-                    isPinned: importedChat.isPinned || false,
-                    isArchived: importedChat.isArchived || false,
-                    // Add any other relevant chat properties from the import
-                };
-
-                await dbManager.add('chats', chatToStore);
-
-                for (const importedMessage of importedChat.messages) {
-                    if (!importedMessage || !importedMessage.id || typeof importedMessage.content !== 'string' || !importedMessage.role) {
-                        logger.warn('Skipping invalid message object during import for chat:', chatToStore.title, importedMessage);
-                        continue;
+            const data = JSON.parse(e.target.result);
+            if (data && data.version === 1 && Array.isArray(data.chats)) {
+                let importedCount = 0;
+                let skippedCount = 0;
+                if (confirm(`This will import ${data.chats.length} chats. Are you sure?`)) {
+                    for (const chat of data.chats) {
+                        const existingChat = await dbManager.get('chats', chat.id);
+                        if (existingChat) {
+                            skippedCount++;
+                            continue;
+                        }
+                        await dbManager.put('chats', {
+                            id: chat.id,
+                            title: chat.title,
+                            createdAt: chat.createdAt,
+                            folderId: chat.folderId,
+                            isPinned: chat.isPinned,
+                            isArchived: chat.isArchived
+                        });
+                        for (const message of chat.messages) {
+                            await dbManager.put('messages', message);
+                        }
+                        importedCount++;
                     }
-
-                    // Check if message ID already exists (less likely to conflict if chat ID is new, but good practice)
-                    let newMessageId = importedMessage.id;
-                    const existingMessage = await dbManager.get('messages', importedMessage.id);
-                    if(existingMessage && existingMessage.chatId !== newChatId) { // Conflict if message ID exists AND belongs to a different chat
-                        newMessageId = crypto.randomUUID();
-                    } else if (existingMessage && existingMessage.chatId === newChatId) {
-                        // If message ID exists for the *same* chat, we might be re-importing.
-                        // For now, let's assume we overwrite/update it. Or skip if preferred.
-                        // If we generated a new chat ID, this path shouldn't be taken often for message ID collision.
+                    if (data.settings) {
+                        settingsManager.set('theme', data.settings.theme);
+                        settingsManager.set('contextWindowSize', data.settings.contextWindowSize);
+                        settingsManager.set('unlimitedContext', data.settings.unlimitedContext);
+                        settingsManager.set('apiKeys', data.settings.apiKeys);
+                        settingsManager.set('models', data.settings.models);
+                        settingsManager.set('folders', data.settings.folders);
+                        settingsManager.set('enableGoogleSearchGrounding', data.settings.enableGoogleSearchGrounding);
+                        settingsManager.set('enableUrlContext', data.settings.enableUrlContext);
+                        settingsManager.set('enableThinking', data.settings.enableThinking);
+                        settingsManager.set('enableDynamicThinking', data.settings.enableDynamicThinking);
+                        settingsManager.set('includeThoughts', data.settings.includeThoughts);
+                        settingsManager.set('thinkingBudget', data.settings.thinkingBudget);
+                        settingsManager.set('disableThinking', data.settings.disableThinking);
                     }
-
-
-                    const messageToStore = {
-                        id: newMessageId,
-                        chatId: newChatId, // Link to the new/existing chat ID
-                        role: importedMessage.role,
-                        content: importedMessage.content,
-                        timestamp: importedMessage.timestamp || Date.now(),
-                        modelUsed: importedMessage.modelUsed || null,
-                        isEdited: importedMessage.isEdited || false,
-                        // Add any other relevant message properties
-                    };
-                    // Using 'put' for messages in case of re-importing a chat that was partially imported before
-                    // or if we decide to allow overwriting messages within an existing chat.
-                    await dbManager.put('messages', messageToStore);
+                    await initializeApp();
+                    if (importedCount > 0) {
+                        showNotification(`${importedCount} chat(s) imported successfully. ${skippedCount > 0 ? skippedCount + ' chat(s) skipped.' : ''}`, 'success');
+                    } else if (skippedCount > 0) {
+                        showNotification(`No chats were imported. ${skippedCount} chat(s) skipped due to existing IDs.`, 'warn');
+                    } else {
+                        showNotification('No new chats found in the file to import.', 'info');
+                    }
                 }
-                importedCount++;
-            }
-
-            await renderChatHistory(); // Refresh the UI
-            if (importedCount > 0) {
-                showNotification(`${importedCount} chat(s) imported successfully. ${skippedCount > 0 ? skippedCount + ' chat(s) skipped.' : ''}`, 'success');
-            } else if (skippedCount > 0) {
-                showNotification(`No chats were imported. ${skippedCount} chat(s) skipped due to errors or existing IDs.`, 'warn');
             } else {
-                 showNotification('No new chats found in the file to import.', 'info');
+                showNotification('Invalid import file.', 'error');
             }
-
         } catch (err) {
-            logger.error('Failed to import chats:', err);
-            showNotification(`Error importing chats: ${err.message}. Please ensure the file is a valid gChat export.`, 'error');
-        } finally {
-            if (importChatsInput) importChatsInput.value = ''; // Reset file input
+            logger.error('Failed to import data:', err);
+            showNotification('Could not import data.', 'error');
         }
-    };
-    reader.onerror = () => {
-        showNotification('Failed to read the chat import file.', 'error');
-        if (importChatsInput) importChatsInput.value = ''; // Reset file input
     };
     reader.readAsText(file);
 }
 
-
-// Start the application
+// --- INITIALIZATION ---
 initializeApp();
