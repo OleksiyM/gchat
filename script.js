@@ -919,7 +919,7 @@ async function getAIResponse(apiKey) {
 
     try {
         // Dynamically import the SDK
-        const { GoogleGenerativeAI } = await import(config.geminiApiUrl);
+        const GoogleGenerativeAI = (await import(config.geminiApiUrl)).default;
         const genAI = new GoogleGenerativeAI(apiKey);
 
         // Get generation config from UI
