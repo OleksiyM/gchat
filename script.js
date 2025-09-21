@@ -7,7 +7,7 @@ const config = {
     defaultLogLevel: 'info',
     dbName: 'gChatDB',
     dbVersion: 1, // Remember to increment this if you change DB schema with new stores/indexes
-    geminiApiUrl: 'https://unpkg.com/@google/generative-ai@latest/dist/index.js?module'
+    geminiApiUrl: 'https://unpkg.com/@google/genai?module'
 };
 
 const state = {
@@ -981,7 +981,6 @@ async function getAIResponse(apiKey) {
 
         // Prepare chat history for the API
         let dbHistory = await dbManager.getMessagesForChat(state.currentChatId);
-        dbHistory = dbHistory.slice(0, -1);
 
         const contextLimit = settingsManager.get('contextWindowSize');
         const isUnlimited = settingsManager.get('unlimitedContext');
@@ -1018,11 +1017,8 @@ async function getAIResponse(apiKey) {
             }
         }
         
-        const chat = model.startChat({ history: sanitizedHistoryForApi });
-        const lastUserMessage = dom.userInput.value.trim() || (await dbManager.getMessagesForChat(state.currentChatId)).pop().content;
-
         const startTime = Date.now();
-        const result = await chat.sendMessageStream(lastUserMessage);
+        const result = await model.generateContentStream({ contents: sanitizedHistoryForApi });
 
         let fullResponse = '';
         let thinkingContent = '';
