@@ -2252,5 +2252,5 @@ async function handleImportChats(event) {
 }
 
 
-// Start the application
-initializeApp();
+// Start the application once the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', initializeApp);
