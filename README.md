@@ -6,7 +6,7 @@
 
 </div>
 
-gChat is a feature-rich, customizable web chat application for Google's Gemini API. It operates as a Progressive Web App (PWA), storing all your chats, settings, and API keys locally in your browser. This ensures your data remains private and accessible even offline (for the app shell and cached resources).
+**gChat** is a feature-rich, customizable web chat application for Google's Gemini API. It operates as a Progressive Web App (PWA), storing all your chats, settings, and API keys locally in your browser. This ensures your data remains private and accessible even offline (for the app shell and cached resources).
 
 ## Running the Application
 
