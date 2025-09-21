@@ -7,7 +7,7 @@ const config = {
     defaultLogLevel: 'info',
     dbName: 'gChatDB',
     dbVersion: 1, // Remember to increment this if you change DB schema with new stores/indexes
-    geminiApiUrl: 'https://unpkg.com/@google/genai?module'
+    geminiApiUrl: 'https://cdn.jsdelivr.net/npm/@google/genai/+esm'
 };
 
 const state = {
@@ -919,7 +919,7 @@ async function getAIResponse(apiKey) {
 
     try {
         // Dynamically import the SDK
-        const GoogleGenerativeAI = (await import(config.geminiApiUrl)).default;
+        const { GoogleGenerativeAI } = await import(config.geminiApiUrl);
         const genAI = new GoogleGenerativeAI(apiKey);
 
         // Get generation config from UI
