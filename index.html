@@ -408,6 +408,10 @@
             });
         }
     </script>
+    <script type="module">
+      import { GoogleGenerativeAI } from 'https://cdn.jsdelivr.net/npm/@google/genai/+esm';
+      window.GoogleGenerativeAI = GoogleGenerativeAI;
+    </script>
     <script type="module" src="script.js"></script>
 </body>
 </html>
